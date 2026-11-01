@@ -1,4 +1,6 @@
-# IRON FRONTIER — Real-time Strategy Game
+# HOMESTAND — Real-time Strategy Game
+
+_Formerly known as Iron Frontier._
 
 An original browser RTS separate from NEON HEIST. Build armies, capture relays, command units, launch orbital strikes and defeat an AI opponent or a human rival in a private 1v1 room.
 

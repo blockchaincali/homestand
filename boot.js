@@ -13,7 +13,7 @@ function unpack(){
  }
  return Object.keys(files).length;
 }
-console.log('IRON FRONTIER: restored '+unpack()+' source files');
+console.log('HOMESTAND: restored '+unpack()+' source files');
 // Apply the small HTTP and difficulty bridge to the legacy room server.
 const serverPath=path.join(root,'server.js');
 let serverText=fs.readFileSync(serverPath,'utf8');
@@ -36,4 +36,4 @@ if(process.argv.includes('--test')){
 }
 const {server}=require('./server.js');
 const port=Number(process.env.PORT||3000);
-server.listen(port,'0.0.0.0',()=>console.log('IRON FRONTIER listening on '+port));
+server.listen(port,'0.0.0.0',()=>console.log('HOMESTAND listening on '+port));
