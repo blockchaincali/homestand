@@ -592,3 +592,11 @@ body:not(.in-battle) .briefing{display:none}
 @keyframes alertFlash{50%{box-shadow:0 0 0 4px rgba(255,90,60,.45),0 12px 30px rgba(0,0,0,.45)}}
 body:not(.in-battle) .target-alert{display:none}
 @media (max-height:520px){.target-alert{top:calc(var(--sat,0px) + 64px);padding:6px 12px}.target-alert strong{font-size:13px}}
+/* Inside a host frame (Vatar / Lagos Life): no fullscreen, install or clipboard affordances. */
+.framed #fullscreen,.framed #install-app,.framed .landscape-suggestion button{display:none!important}
+.host-board{margin:0 0 14px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,208,107,.35);background:rgba(10,28,35,.62);backdrop-filter:blur(8px)}
+.host-board[hidden]{display:none}
+.host-board small{font-size:10px;letter-spacing:.2em;font-weight:800;color:#ffd06b}
+.host-board ol{margin:8px 0 0;padding-left:22px;display:grid;gap:4px;font-size:13px}
+.host-board li{display:flex;justify-content:space-between;gap:12px}.host-board li b{font-variant-numeric:tabular-nums}
+.host-board .board-me{margin:8px 0 0;font-weight:700;color:#9fe3f2}

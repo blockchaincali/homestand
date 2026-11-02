@@ -65,3 +65,20 @@ test('A flood of commands is throttled per connection without dropping normal pl
  for(let i=0;i<200;i++)ws.receive({type:'command',action:'move',unitIds:[unit.id],x:400,y:600});
  assert.ok(ws.all('notice').some(n=>/Too many commands/.test(n.message)));
 });
+
+test('Pages may only be framed by Vatar origins and ourselves',async()=>{
+ const {server}=require('../server');await new Promise(r=>server.listen(0,r));const port=server.address().port;
+ try{const res=await fetch('http://127.0.0.1:'+port+'/');const policy=res.headers.get('content-security-policy')||'';
+  assert.match(policy,/frame-ancestors 'self' https:\/\/lagoslife\.app/);assert.ok(!res.headers.get('x-frame-options'));
+  const js=await fetch('http://127.0.0.1:'+port+'/platform.js');assert.equal(js.headers.get('content-security-policy'),null,'only documents carry the policy');}
+ finally{server.close()}
+});
+
+test('A solo match pauses when the host backgrounds it; co-op and versus never pause',()=>{
+ const ws=wss.connect();ws.receive({type:'create',mode:'solo',scenario:'territory',name:'Solo'});const room=rooms.get(ws.last('joined').code);
+ ws.receive({type:'pause',paused:true});assert.equal(room.game.paused,true);assert.equal(ws.last('state').paused,true);
+ const t=room.game.time;room.game.paused&&assert.equal(room.game.time,t);
+ ws.receive({type:'pause',paused:false});assert.equal(room.game.paused,false);
+ ws.receive({type:'pause',paused:true});const again=wss.connect();again.receive({type:'join',code:room.code,id:ws.last('joined').id});assert.equal(room.game.paused,false,'reconnecting resumes');
+ const {host,room:versusRoom}=versus();host.receive({type:'start'});host.receive({type:'pause',paused:true});assert.ok(!versusRoom.game.paused);assert.match(host.last('notice').message,/solo/i);
+});

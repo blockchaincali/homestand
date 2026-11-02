@@ -27,7 +27,7 @@ class Game {
  teamCapacity(){return this.scenario==='territory'?2:1}
  addParticipant(id,name,team,isBot=false){if(this.phase!=='lobby')return false;if(this.participants.filter(p=>p.team===team).length>=this.teamCapacity()||isBot&&this.participants.some(p=>p.team===team)||this.participants.some(p=>p.team===team&&p.bot))return false;this.participants.push({id,name:name.slice(0,18),team,bot:isBot,connected:true});return true}
  resetWorld(){
-  this.civilians=null;
+  this.civilians=null;this.paused=false;
   this.time=0;this.aiClock=0;this.incomeClock=0;this.seq=1;this.eventId=1;this.stats=[0,1].map(()=>({built:0,trained:0,caches:0,lost:0,planted:0,detected:0,defused:0}));this.units=[];this.bases=[];this.structures=[];this.facilities=[];this.caches=[];this.mines=[];this.projectiles=[];this.blasts=[];this.events=[];this.win=null;
   const recruit=this.mode==='solo'&&this.difficulty==='recruit';
   this.teams=[{credits:recruit?620:START_CREDITS,energy:130,points:0,kills:0,powerCooldown:0},{credits:recruit?160:START_CREDITS,energy:130,points:0,kills:0,powerCooldown:0}];
@@ -64,6 +64,9 @@ class Game {
  }
  tutorialComplete(team){if(!this.mission)return this.completeTraining(team);if(team!==0)return {ok:false,reason:'Only the trainee commander can complete onboarding'};if(this.mission.stage!=='tutorial')return {ok:true};this.mission.stage='prepare';this.mission.stageTime=0;this.mission.prepareRemaining=this.mission.prepDuration;this.event(Math.round(this.mission.prepDuration/60)+' MINUTES OF PROTECTED PREPARATION BEGIN',0);return {ok:true}}
  completeTraining(team,playerId=null){if(this.scenario==='territory')return this.territoryReady(team,playerId);if(!this.training)return {ok:true};if(team!==0)return {ok:false,reason:'Only the trainee commander can finish training'};if(this.mission?.stage==='tutorial')return {ok:false,reason:'Complete or skip the field tutorial first'};if(this.mission?.stage==='prepare'){this.mission.stage='warning';this.mission.stageTime=0;this.mission.prepareRemaining=this.mission.warningDuration;this.event('HOSTILES STAGING IN '+(this.theatre?.zones.staging||'THE EAST').toUpperCase()+' - FIRST ASSAULT IN 2:00',0);return {ok:true,warning:true}}this.training=false;this.aiClock=0;this.incomeClock=0;if(this.mission){this.mission.stage='protect';this.mission.stageTime=0;this.mission.prepareRemaining=0;this.spawnMissionWave(1);this.event('DEFENSE BEGUN - PROTECT CIVILIANS AND THE EVACUATION ROUTE',0)}else{for(const unit of this.units.filter(unit=>unit.team===1)){unit.hold=false;unit.order='attackmove';unit.dest={x:W/2,y:H/2}}this.event('FIELD TRAINING COMPLETE - LIVE BATTLE STARTED',0)}return {ok:true}}
+ // Host-requested pause (app backgrounded). Only a match with a single human may pause: nobody
+ // else's game is ever frozen, and it never applies to versus or co-op.
+ setPaused(paused,playerId){if(this.phase!=='playing')return {ok:false,reason:'No active battle'};const humans=this.participants.filter(p=>!p.bot);if(paused&&(humans.length!==1||humans[0].id!==playerId))return {ok:false,reason:'Only solo battles can pause'};this.paused=Boolean(paused);return {ok:true,paused:this.paused}}
  supply(team){return this.units.filter(u=>u.team===team).reduce((sum,u)=>sum+UNITS[u.type].supply,0)}
  spawn(team,type,free=false){
   const d=UNITS[type],t=this.teams[team]; if(!d||!t||this.phase!=='playing'&&!free)return {ok:false,reason:'No battle running'};
@@ -426,7 +429,7 @@ class Game {
   bases:this.bases.map(b=>({id:b.id,kind:b.kind,team:b.team,x:b.x,y:b.y,hp:Math.ceil(b.hp),maxHp:b.maxHp,radius:b.radius,production:b.production?{...b.production,progress:Math.round(b.production.progress*10)/10}:null,queue:b.queue?[...b.queue]:[],waiting:b.waiting||null,hacked:b.hackedUntil>this.time?Math.ceil(b.hackedUntil-this.time):0})),
   structures:this.structures.map(structure=>({...structure,hackedUntil:undefined,hacked:structure.hackedUntil>this.time?Math.ceil(structure.hackedUntil-this.time):0,queue:structure.queue?[...structure.queue]:[],hp:Math.ceil(structure.hp),progress:Math.round(structure.progress*10)/10,production:structure.production?{...structure.production,progress:Math.round(structure.production.progress*10)/10}:null})),facilities:this.facilities.map(facility=>({...facility,hp:Math.ceil(facility.hp)})),caches:this.caches.map(cache=>({...cache})),
   nodes:this.nodes.map(n=>({...n})),projectiles:this.projectiles.map(p=>({id:p.id,sourceId:p.sourceId,x:Math.round(p.x),y:Math.round(p.y),toX:p.toX,toY:p.toY,from:p.from,type:p.type})),
-  blasts:this.blasts.map(b=>({id:b.id,kind:b.kind||null,x:b.x,y:b.y,age:b.age,delay:b.delay,radius:b.radius,team:b.team})),events:this.events.slice(-7),civilians:this.civilianSnapshot(),intel:this.scenario==='territory'?this.intelSnapshot():null,variant:this.variant,participants:this.participants.map(p=>({id:p.id,name:p.name,team:p.team,bot:p.bot,connected:p.connected}))};
+  blasts:this.blasts.map(b=>({id:b.id,kind:b.kind||null,x:b.x,y:b.y,age:b.age,delay:b.delay,radius:b.radius,team:b.team})),events:this.events.slice(-7),civilians:this.civilianSnapshot(),paused:Boolean(this.paused),intel:this.scenario==='territory'?this.intelSnapshot():null,variant:this.variant,participants:this.participants.map(p=>({id:p.id,name:p.name,team:p.team,bot:p.bot,connected:p.connected}))};
  }
 }
 Object.assign(Game.prototype,territoryMethods,civilianMethods,intelMethods,modeMethods,tacticMethods);

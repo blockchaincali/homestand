@@ -39,5 +39,8 @@
    const chirps=setInterval(()=>{if(muted||ctx.state!=='running')return;const t=now();for(let i=0;i<3;i++)tone(t+i*.07,.04,{freq:4200+Math.random()*300,wave:'sine',peak:.012})},2300);ambient={src,lfo,chirps}}catch{}}
  function stopAmbient(){if(!ambient)return;try{ambient.src.stop();ambient.lfo.stop()}catch{}clearInterval(ambient.chirps);ambient=null}
  function setMuted(value){muted=Boolean(value);localStorage.setItem(KEY,muted?'1':'0');if(master)master.gain.setTargetAtTime(muted?0:.55,ctx.currentTime,.05);return muted}
- window.HomestandAudio=Object.freeze({play,startAmbient,stopAmbient,muted:()=>muted,toggle:()=>setMuted(!muted),setMuted});
+ // Host pause (e.g. the Vatar Games app backgrounding the frame): silence the context without touching the saved preference.
+function suspend(){try{ctx?.suspend?.()}catch{}}
+function resume(){try{if(ctx&&ctx.state==='suspended')ctx.resume()}catch{}}
+window.HomestandAudio=Object.freeze({play,startAmbient,stopAmbient,muted:()=>muted,toggle:()=>setMuted(!muted),setMuted,suspend,resume});
 })();

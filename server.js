@@ -19,12 +19,16 @@ function serveFile(req,res,filePath,cacheControl){
  fs.stat(filePath,(statError,stat)=>{if(statError){res.writeHead(404);return res.end('Not found')}
   const type=contentType[path.extname(filePath)]||'application/octet-stream',etag='"'+stat.size.toString(36)+'-'+Math.floor(stat.mtimeMs).toString(36)+'"',gzip=compressible.test(filePath)&&/\bgzip\b/.test(req.headers['accept-encoding']||'');
   const headers={'Content-Type':type,'Cache-Control':cacheControl,ETag:etag,Vary:'Accept-Encoding'};
+  // Vatar's Lagos Life Games app frames the game; only those origins (and ourselves) may embed it.
+  if(type.startsWith('text/html'))headers['Content-Security-Policy']=FRAME_POLICY;
   if(req.headers['if-none-match']===etag){res.writeHead(304,headers);return res.end()}
   const key=filePath+(gzip?':gz':''),cached=responseCache.get(key),finish=body=>{if(gzip)headers['Content-Encoding']='gzip';headers['Content-Length']=body.length;res.writeHead(200,headers);res.end(req.method==='HEAD'?undefined:body)};
   if(cached?.etag===etag)return finish(cached.body);
   fs.readFile(filePath,(readError,data)=>{if(readError){res.writeHead(404);return res.end('Not found')}const body=gzip?zlib.gzipSync(data,{level:9}):data;responseCache.set(key,{etag,body});finish(body)})
  })
 }
+// FRAME_ANCESTORS_EXTRA (space-separated origins) lets a local test harness frame the game; unset in production.
+const FRAME_POLICY="frame-ancestors 'self' https://lagoslife.app https://www.lagoslife.app https://naijalife.app https://www.naijalife.app https://lagoslife.eliysites.com"+(process.env.FRAME_ANCESTORS_EXTRA?' '+process.env.FRAME_ANCESTORS_EXTRA.split(/\s+/).filter(o=>/^https?:\/\/[a-z0-9.:-]+$/i.test(o)).join(' '):'');
 const contentType={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.webmanifest':'application/manifest+json'};
 const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://localhost').pathname;
@@ -74,7 +78,7 @@ function ping(ws,room,player,msg){
 }
 function register(ws,room,p,existing=false){
  const old=room.sockets.get(p.id);if(old&&old!==ws){try{old.close(4000,'Reconnected')}catch{}}
- ws.room=room.code;ws.playerId=p.id;room.sockets.set(p.id,ws);p.connected=true;room.lastActivity=Date.now();
+ ws.room=room.code;ws.playerId=p.id;room.sockets.set(p.id,ws);p.connected=true;room.lastActivity=Date.now();if(room.game.paused)room.game.setPaused(false,p.id);
  send(ws,{type:'joined',code:room.code,id:p.id,team:p.team,existing});
  for(const m of room.chat)if(m.scope==='all'||m.team===p.team)send(ws,{...m,history:true});
  broadcastState(room)
@@ -111,6 +115,7 @@ function action(ws,msg){
  const game=room.game;let outcome;
  switch(msg.type){
   case 'chat':return chat(ws,room,player,msg);
+  case 'pause':outcome=game.setPaused(Boolean(msg.paused),player.id);break;
   case 'ping':return ping(ws,room,player,msg);
   case 'start':if(room.hostId!==player.id)return send(ws,{type:'error',message:'Only host can start'});outcome=game.start()?{ok:true}:{ok:false,reason:'Waiting for opposing commander'};break;
   case 'build':outcome=game.spawn(player.team,String(msg.unitType||''));break;
@@ -165,7 +170,7 @@ wss.on('connection',ws=>{
 let accumulator=0,last=performance.now(),broadcastClock=0;
 const loop=setInterval(()=>{
  const now=performance.now();accumulator=Math.min(0.25,accumulator+(now-last)/1000);last=now;
- while(accumulator>=STEP){for(const room of rooms.values())if(room.game.phase==='playing')room.game.step(STEP);accumulator-=STEP;broadcastClock+=STEP}
+ while(accumulator>=STEP){for(const room of rooms.values())if(room.game.phase==='playing'&&!room.game.paused)room.game.step(STEP);accumulator-=STEP;broadcastClock+=STEP}
  // Rooms that just changed phase (victory, defeat, rematch) are broadcast immediately so the
  // results screen appears the moment a match ends, not on the player's next action.
  for(const room of rooms.values())if(room.sentPhase!==undefined&&room.sentPhase!==room.game.phase)broadcastState(room);
