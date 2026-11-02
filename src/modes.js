@@ -8,7 +8,8 @@
 //              the HQ falls or the dead make that impossible.
 // Both special modes are always Community Defence (humans) against Raider AI.
 const MODES={
- war:{id:'war',name:'Territory War'},
+ // The defence holds the line for 20 live minutes; the raiders must take the community HQ before then.
+ war:{id:'war',name:'Territory War',liveSeconds:20*60},
  rescue:{id:'rescue',name:'Rescue Ops',hostages:8,target:6,prepMinutes:3},
  survival:{id:'survival',name:'Civilian Survival',liveSeconds:12*60,minSafe:12,prepMinutes:3}
 };
@@ -27,7 +28,8 @@ const modes={
  variantProfile(p){if(this.variant==='survival')return {...p,snatch:p.snatch+2,attackEvery:Math.round(p.attackEvery*.75),firstAttack:Math.min(p.firstAttack,40)};if(this.variant==='rescue')return {...p,snatch:Math.max(1,p.snatch-1)};return p},
  civilianTally(){const n=this.civilianCounts();return {free:n.free+n.sheltered+n.safe,dead:n.dead,taken:n.held+n.captive+n.rescued,total:(this.civilians||[]).length}},
  stepVariant(){
-  const v=this.variant,t=this.territory;if(v==='war'||this.phase!=='playing'||!t||t.stage!=='live')return;
+  const v=this.variant,t=this.territory;if(this.phase!=='playing'||!t||t.stage!=='live')return;
+  if(v==='war'){const left=Math.max(0,MODES.war.liveSeconds-t.liveTime);t.objective={mode:'war',remaining:Math.ceil(left),duration:MODES.war.liveSeconds};if(left<=0)this.end(0,'THE COMMUNITY HELD THE LINE - THE RAIDERS RAN OUT OF TIME');return}
   const tally=this.civilianTally();
   if(v==='rescue'){const target=MODES.rescue.target,rescued=this.civStats.rescued,stillHeld=this.civilians.filter(c=>['held','captive','rescued'].includes(c.state)).length;
    t.objective={...t.objective,rescued,stillHeld};

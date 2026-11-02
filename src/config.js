@@ -5,7 +5,7 @@ const UNITS={
  tank:{label:'Siege Tank',short:'TANK',cost:165,hp:305,speed:56,range:196,damage:41,fireRate:1.65,bulletSpeed:460,splash:31,radius:20,supply:3},
  rocket:{label:'Rocket Battery',short:'ROCKET',cost:130,hp:118,speed:66,range:270,damage:29,fireRate:2.35,bulletSpeed:340,splash:63,radius:16,supply:2},
  engineer:{label:'Engineer Vehicle',short:'ENGINEER',cost:120,hp:180,speed:72,range:96,damage:5,fireRate:1.1,bulletSpeed:540,splash:0,radius:18,supply:2},
- scanner:{label:'Eagle-Eye Scanner',short:'SCANNER',cost:110,hp:170,speed:82,range:120,damage:6,fireRate:1.2,bulletSpeed:560,splash:0,radius:17,supply:2,scan:235},
+ scanner:{label:'Eagle-Eye Scanner',short:'SCANNER',cost:110,hp:170,speed:82,range:120,damage:6,fireRate:1.2,bulletSpeed:560,splash:0,radius:17,supply:2,scan:235,rocketRange:300,rocketDamage:34,rocketRate:2.2,rocketSplash:22},
  hacker:{label:'Cyber Team',short:'CYBER',cost:130,hp:70,speed:86,range:0,damage:0,fireRate:9,bulletSpeed:1,splash:0,radius:11,supply:1},
  patrol:{label:'Protected Patrol',short:'PATROL',cost:145,hp:250,speed:76,range:175,damage:26,fireRate:1.1,bulletSpeed:590,splash:14,radius:20,supply:3}
 };

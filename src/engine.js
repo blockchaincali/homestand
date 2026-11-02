@@ -5,6 +5,7 @@ const {territory:territoryMethods,PREP_CHOICES}=require('./territory');
 const {civilians:civilianMethods}=require('./civilians');
 const {intel:intelMethods}=require('./intel');
 const {modes:modeMethods,MODES}=require('./modes');
+const {tactics:tacticMethods,WALL}=require('./tactics');
 const {CATALOG}=require('./config');
 // Safe Haven assault pacing per difficulty: seconds between waves, opening size, growth per wave and cap.
 const WAVE_PLAN={recruit:{gap:24,base:2,grow:1,max:6},standard:{gap:18,base:3,grow:1.4,max:9},veteran:{gap:13,base:4,grow:2,max:12}};
@@ -78,7 +79,7 @@ class Game {
   const u={id:this.nextId('u'),team,type,x,y,hp:d.hp,maxHp:d.hp,radius:d.radius,cd:rnum(0,0.6),order:'attackmove',dest:{x:objective.x+(team?60:-60),y:objective.y+rnum(-30,30)},targetId:null,hold:false,angle:team===0?0:Math.PI,vx:0,vy:0};
   this.units.push(u);return {ok:true,unit:u};
  }
- constructionSite(team,type,x,y,builderIds,plotId=null){
+ constructionSite(team,type,x,y,builderIds,plotId=null,rot=0){
   const territory=this.scenario==='territory';
   if(!(this.missionId==='safe-haven'||territory)||this.phase!=='playing')return {ok:false,reason:'Construction is only available in Safe Haven and Territory War'};
   const definition=STRUCTURES[type];if(!definition)return {ok:false,reason:'Unknown structure'};
@@ -93,7 +94,7 @@ class Game {
   if(!builders.length)return {ok:false,reason:engineers.length?'All engineers are busy - train another at the HQ or have one assist':'No engineers left - train one at the HQ'};
   const blockers=[...this.bases,...this.facilities,...this.structures,...this.nodes];if(blockers.some(object=>object.hp!==0&&Math.hypot(object.x-px,object.y-py)<(object.radius||44)+definition.radius+(site?.plotId?6:18)))return {ok:false,reason:'That location is blocked'};if(sceneryBlockers(this.mapId).some(object=>Math.hypot(object.x-px,object.y-py)<object.radius+definition.radius+10))return {ok:false,reason:'Homes and market stalls block that site'};
   if(this.teams[team].credits<definition.cost)return {ok:false,reason:'Need '+definition.cost+' credits'};this.teams[team].credits-=definition.cost;
-  const structure={id:this.nextId('s'),team,type,x:px,y:py,hp:Math.ceil(definition.hp*.3),maxHp:definition.hp,radius:definition.radius,status:'building',progress:0,buildTime:definition.buildTime,level:1,cd:0,production:null,upgradeProgress:0,builderId:builders[0].id,builders:0,plotId:site?.plotId||null};this.structures.push(structure);
+  const structure={id:this.nextId('s'),team,type,x:px,y:py,hp:Math.ceil(definition.hp*.3),maxHp:definition.hp,radius:definition.radius,status:'building',progress:0,buildTime:definition.buildTime,level:1,cd:0,production:null,upgradeProgress:0,builderId:builders[0].id,builders:0,plotId:site?.plotId||null};if(type==='barricade')structure.rot=Number(rot)===1?1:0;this.structures.push(structure);
   for(const builder of builders){builder.order='construct';builder.dest={x:px,y:py};builder.targetId=structure.id;builder.hold=false;builder.job=null;builder.path=null}this.event('CONSTRUCTION STARTED - '+(territory?CATALOG.name(type,team):definition.label).toUpperCase(),team);return {ok:true,structure};
  }
  // Production queues: up to 20 orders per building. Each order is paid for when it starts, so a
@@ -139,7 +140,7 @@ class Game {
   units.forEach((u,i)=>{
    const spread=(i-(units.length-1)/2)*27;
    u.order=action;u.job=null;u.path=null;u.captureSquad=false;u.targetId=action==='focus'?targetId:null;
-   u.hold=action==='hold'||action==='stop';
+   u.hold=action==='hold'||action==='stop';u.stance=action==='hold'?'hold':'guard';u.post=null;u.returning=false;
    if(action==='move'||action==='attackmove')u.dest={x:clamp(Number(x)||u.x,BOUNDS.left,BOUNDS.right),y:clamp((Number(y)||u.y)+spread,BOUNDS.top,BOUNDS.bottom)};
    if(action==='focus')u.dest=null;
   });
@@ -252,8 +253,8 @@ class Game {
   else if(reward==='defense')this.teams[team].defenseBoostUntil=Math.max(this.teams[team].defenseBoostUntil||0,this.time+25);
   this.event((source||'SUPPLY CACHE')+' SECURED - '+reward.toUpperCase()+' SUPPORT RECEIVED',team);
  }
- fire(source,target,damage,speed,splash=0){
-  this.projectiles.push({id:this.nextId('p'),sourceId:source.id,x:source.x,y:source.y,from:source.team,toX:target.x,toY:target.y,targetId:target.id,damage,speed,splash,age:0,life:3,type:source.type||source.kind});
+ fire(source,target,damage,speed,splash=0,kind=null){
+  this.projectiles.push({id:this.nextId('p'),sourceId:source.id,x:source.x,y:source.y,from:source.team,toX:target.x,toY:target.y,targetId:target.id,damage,speed,splash,age:0,life:3,type:kind||source.type||source.kind});
  }
  step(dt=0.05){
   if(this.phase!=='playing')return;
@@ -261,14 +262,18 @@ class Game {
   const ceasefire=this.ceasefire();
   for(const b of this.bases){if(b.hp<=0||b.hackedUntil>this.time)continue;b.cd-=dt;if(this.training||ceasefire)continue;const target=this.closestEnemy(b,b.team,b.range);if(target&&b.cd<=0){this.fire(b,target,b.kind==='hq'?22:25,575,9);b.cd=b.kind==='hq'?0.65:1.0}}
   this.stepStructures(dt);
+  const navBudget={count:0};
   for(const u of [...this.units]){
    const d=UNITS[u.type];u.cd-=dt;
    if(this.training&&u.team===1)continue;
    if(u.type==='engineer'&&u.order==='repair'){
     const repairTarget=this.structures.find(value=>value.id===u.targetId&&value.team===u.team&&value.status==='active');if(!repairTarget||repairTarget.hp>=repairTarget.maxHp){u.order='hold';u.dest=null;u.targetId=null;u.hold=true;continue}const repairDistance=Math.hypot(u.x-repairTarget.x,u.y-repairTarget.y);if(repairDistance<=u.radius+repairTarget.radius+24){u.hold=true;const affordable=Math.min(32*dt,this.teams[u.team].credits*4);repairTarget.hp=Math.min(repairTarget.maxHp,repairTarget.hp+affordable);this.teams[u.team].credits=Math.max(0,this.teams[u.team].credits-affordable/4);if(repairTarget.hp>=repairTarget.maxHp){u.order='hold';u.dest=null;u.targetId=null;this.event(STRUCTURES[repairTarget.type].label.toUpperCase()+' REPAIRED',u.team)}continue}}
+   if(this.scenario==='territory'&&!(this.training&&u.team===1))this.guardStep(u,d,ceasefire);
    const job=u.order==='plant'||u.order==='defuse'?this.stepIedJob(u,dt):null;if(job==='busy')continue;
    let target=job||ceasefire?null:u.targetId?this.combatants().find(t=>t.id===u.targetId&&t.hp>0&&t.team!==u.team):null;
    if(!job&&!ceasefire&&!target&&u.order!=='move')target=this.closestEnemy(u,u.team,d.range+(u.order==='focus'?220:35));
+   // Eagle-Eye rocket pod: automatically fires on any enemy vehicle within range, wherever the scanner is.
+   if(u.type==='scanner'){u.rocketCd=Math.max(0,(u.rocketCd||0)-dt);if(!job&&!ceasefire&&u.rocketCd<=0){const vehicle=this.closestVehicle(u,d.rocketRange);if(vehicle){this.fire(u,vehicle,d.rocketDamage,380,d.rocketSplash,'rocket');u.rocketCd=d.rocketRate;if(!target)u.angle=Math.atan2(vehicle.y-u.y,vehicle.x-u.x)}}}
    if(target&&hypot(u,target)<=d.range){
     u.angle=Math.atan2(target.y-u.y,target.x-u.x);
     if(u.cd<=0){this.fire(u,target,d.damage,d.bulletSpeed,d.splash);u.cd=d.fireRate}
@@ -276,14 +281,15 @@ class Game {
    }
    if(u.hold)continue;
    let dest=u.dest;
-   if(u.order==='focus'&&target)dest={x:target.x,y:target.y};
+   if((u.order==='focus'||u.order==='engage')&&target)dest={x:target.x,y:target.y};
+   if(dest&&dest===u.dest&&['move','attackmove','construct','repair'].includes(u.order)){this.navigate(u,dest,dt,navBudget);dest=u.dest}
    if(!dest||u.order==='attackmove'&&target&&hypot(u,target)<d.range*1.25&&u.type==='rocket')continue;
    const dx=dest.x-u.x,dy=dest.y-u.y,dist=Math.hypot(dx,dy);
    if(dist<d.radius*0.65){if(u.path?.length){u.dest=u.path.shift();continue}if(u.order==='move')u.order='hold';continue}
    const speed=Math.min(d.speed*dt,dist);
    let separationX=0,separationY=0;
    for(const other of this.units){if(other===u)continue;const ox=u.x-other.x,oy=u.y-other.y,near=Math.hypot(ox,oy);if(near>0&&near<d.radius+other.radius+6){separationX+=ox/near*.7;separationY+=oy/near*.7}}
-   for(const obstacle of this.structures.filter(value=>value.hp>0)){const ox=u.x-obstacle.x,oy=u.y-obstacle.y,near=Math.hypot(ox,oy),limit=d.radius+obstacle.radius+3;if(near>0&&near<limit){separationX+=ox/near*2.3;separationY+=oy/near*2.3}}
+   for(const obstacle of this.structures.filter(value=>value.hp>0)){if(obstacle.type==='barricade'&&this.scenario==='territory'){const push=this.wallPush(u,obstacle,d.radius+WALL.thick+3);if(push){separationX+=push.x*2.6;separationY+=push.y*2.6}continue}const ox=u.x-obstacle.x,oy=u.y-obstacle.y,near=Math.hypot(ox,oy),limit=d.radius+obstacle.radius+3;if(near>0&&near<limit){separationX+=ox/near*2.3;separationY+=oy/near*2.3}}
    for(const mine of this.mines){if(mine.team===u.team||!mine.revealed[u.team]||u.type==='scanner')continue;const ox=u.x-mine.x,oy=u.y-mine.y,near=Math.hypot(ox,oy),limit=IED.trigger+d.radius+30;if(near>0&&near<limit){const push=2.6*(1-near/limit)+.9,side=u.dodge?.id===mine.id?u.dodge.side:(u.dodge={id:mine.id,side:(dx*oy-dy*ox)>=0?1:-1}).side;separationX+=ox/near*push-side*oy/near*1.6;separationY+=oy/near*push+side*ox/near*1.6}}
    const ax=dx/dist+separationX,ay=dy/dist+separationY,len=Math.hypot(ax,ay)||1;
    const nx=clamp(u.x+ax/len*speed,BOUNDS.left,BOUNDS.right),ny=clamp(u.y+ay/len*speed,BOUNDS.top,BOUNDS.bottom);
@@ -340,6 +346,7 @@ class Game {
   if(!this.mission&&!this.scenario&&!this.training&&this.time>=this.duration)this.end(this.teams[0].points===this.teams[1].points?this.bases[0].hp>=this.bases[1].hp?0:1:this.teams[0].points>this.teams[1].points?0:1,'TIME LIMIT');
  }
  combatants(){return [...this.units,...this.bases,...this.structures,...this.facilities]}
+ closestVehicle(actor,range){let best=null,nearest=Infinity;for(const v of this.units){if(v.team===actor.team||v.hp<=0||['rifle','hacker'].includes(v.type))continue;const d=hypot(actor,v);if(d<range&&d<nearest){nearest=d;best=v}}return best}
  closestEnemy(actor,team,range){let best=null,nearest=Infinity;
   for(const u of this.combatants()){if(u.team===team||u.hp<=0)continue;const d=hypot(actor,u);if(d<range&&d<nearest){nearest=d;best=u}}return best;
  }
@@ -360,7 +367,7 @@ class Game {
    if(producer.hackedUntil>this.time)continue;
    if(!producer.production)this.startNextProduction(producer);
    if(!producer.production)continue;producer.production.progress+=dt;if(producer.production.progress<producer.production.duration)continue;
-   const produced=producer.production.type,offset=producer.radius+36,dir=producer.team===0?1:-1;this.stats[producer.team].trained++;const unit=this.spawnAt(producer.team,produced,producer.x+dir*offset,producer.y+(producer.kind==='hq'?rnum(-50,50):0));if(unit)unit.angle=producer.team===0?0:Math.PI;producer.production=null;this.startNextProduction(producer);
+   const produced=producer.production.type,offset=producer.radius+36,dir=producer.team===0?1:-1;this.stats[producer.team].trained++;const unit=this.spawnAt(producer.team,produced,producer.x+dir*offset,producer.y+(producer.kind==='hq'?rnum(-50,50):0));if(unit){unit.angle=producer.team===0?0:Math.PI;this.clearSpawn(unit);this.sendToRally(producer,unit)}producer.production=null;this.startNextProduction(producer);
    this.event(this.scenario==='territory'?CATALOG.UNIT_NAMES[producer.team][produced].toUpperCase()+' READY':produced==='rifle'?'INFANTRY SQUAD READY':produced==='scanner'?'EAGLE-EYE SCANNER DEPLOYED':'PROTECTED PATROL VEHICLE DEPLOYED',producer.team);
   }
  }
@@ -422,5 +429,5 @@ class Game {
   blasts:this.blasts.map(b=>({id:b.id,kind:b.kind||null,x:b.x,y:b.y,age:b.age,delay:b.delay,radius:b.radius,team:b.team})),events:this.events.slice(-7),civilians:this.civilianSnapshot(),intel:this.scenario==='territory'?this.intelSnapshot():null,variant:this.variant,participants:this.participants.map(p=>({id:p.id,name:p.name,team:p.team,bot:p.bot,connected:p.connected}))};
  }
 }
-Object.assign(Game.prototype,territoryMethods,civilianMethods,intelMethods,modeMethods);
+Object.assign(Game.prototype,territoryMethods,civilianMethods,intelMethods,modeMethods,tacticMethods);
 module.exports={Game};

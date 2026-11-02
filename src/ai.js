@@ -56,7 +56,7 @@ class FactionAI{
  siteFor(type){
   const g=this.game,def=STRUCTURES[type],state={nodes:g.nodes,structures:g.structures},hq=this.hq;
   if(def.size==='large'){
-   const plots=this.layout.plots.filter(p=>(def.resourceOnly?p.kind==='resource':p.kind!=='resource')&&MAPS.plotStatus('frontier',p,this.team,state).ok).sort((a,b)=>(a.team===this.team?0:1)-(b.team===this.team?0:1)||dist(a,hq)-dist(b,hq));
+   const usable=this.layout.plots.filter(p=>MAPS.plotStatus('frontier',p,this.team,state).ok),preferred=usable.filter(p=>type==='collector'?p.kind==='resource':p.kind!=='resource'),plots=(preferred.length?preferred:usable).sort((a,b)=>(a.team===this.team?0:1)-(b.team===this.team?0:1)||dist(a,hq)-dist(b,hq));
    return plots[0]?{x:plots[0].x,y:plots[0].y,plotId:plots[0].id}:null;
   }
   for(const spot of this.layout.defenceSpots[this.team]){if(g.structures.some(s=>s.hp>0&&dist(s,spot)<70))continue;if(g.territorySite(this.team,type,spot.x,spot.y).ok)return {x:spot.x,y:spot.y}}
@@ -122,7 +122,7 @@ class FactionAI{
   if(due&&supply>=this.p.attackSupply){
    const route=this.attackCount===0&&this.opening?this.opening:this.level==='recruit'?'central':this.level==='veteran'?this.planWeakest():ROUTES[Math.floor(Math.random()*ROUTES.length)];
    const groups=this.p.split&&home.length>=6?[home.slice(0,Math.ceil(home.length/2)),home.slice(Math.ceil(home.length/2))]:[home];
-   groups.forEach((group,i)=>{const r=i===0?route:ROUTES.filter(x=>x!==route)[Math.floor(Math.random()*2)],target=this.pickTarget(r);this.send(group,[...this.routePath(r),target]);for(const u of group)this.attackers.add(u.id);if(this.p.announce)g.event((this.team===1?'RAIDERS':'DEFENCE FORCES')+' ADVANCING ON THE '+r.toUpperCase()+' ROUTE',1-this.team)});
+   groups.forEach((group,i)=>{const r=i===0?route:ROUTES.filter(x=>x!==route)[Math.floor(Math.random()*2)],target=this.pickTarget(r);this.send(group,[...this.routePath(r),target]);for(const u of group)this.attackers.add(u.id);if(this.p.announce){g.event((this.team===1?'RAIDERS':'DEFENCE FORCES')+' ADVANCING ON THE '+r.toUpperCase()+' ROUTE',1-this.team);g.reportThreat(this.team,r,'confirmed',[target])}});
    this.lastAttack=g.time;this.attackCount++;this.opening=null;
    if(this.p.ied&&Math.random()<this.p.ied*3){const planter=home.find(u=>u.type==='rifle');const spot=this.routePath(route)[0];if(planter&&spot)g.plantIed(this.team,[planter.id],spot.x+(this.team===1?-120:120),spot.y+(Math.random()-.5)*60)}
   }

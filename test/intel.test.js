@@ -17,7 +17,7 @@ test('comms centres train hackers; the catalogue names them per faction',()=>{
 
 test('a hacker takes a building offline: no production, no fire, then it recovers',()=>{
  const g=war();live(g);g.bases.forEach(b=>b.range=0);g.units=g.units.filter(u=>u.type==='engineer');
- g.teams[1].credits=5000;const camp=built(g,1,'barracks',1960,520);camp.production={type:'rifle',progress:1,duration:30};
+ g.teams[1].credits=5000;const camp=built(g,1,'barracks',1960,520);camp.production={type:'rifle',progress:1,duration:30};g.units=g.units.filter(u=>u.team===0);
  const hacker=g.spawnAt(0,'hacker',camp.x-camp.radius-60,camp.y);hacker.hold=true;hacker.order='hold';
  run(g,HACK.time+.3);assert.ok(camp.hackedUntil>g.time,'barracks hacked');
  const progress=camp.production?.progress;run(g,3);assert.equal(camp.production?.progress,progress,'production frozen while offline');
@@ -28,7 +28,7 @@ test('a hacker takes a building offline: no production, no fire, then it recover
 
 test('a friendly hacker near the target is a firewall, and damage interrupts an intrusion',()=>{
  const g=war();live(g);g.bases.forEach(b=>b.range=0);g.units=g.units.filter(u=>u.type==='engineer');
- const tower=built(g,1,'guardpost',1900,700);
+ const tower=built(g,1,'guardpost',1900,780);
  const attacker=g.spawnAt(0,'hacker',tower.x-120,tower.y);attacker.hold=true;attacker.order='hold';
  const guard=g.spawnAt(1,'hacker',tower.x+60,tower.y);guard.hold=true;guard.order='hold';
  run(g,HACK.time+1);assert.ok(!(tower.hackedUntil>g.time),'firewall blocks');assert.ok(g.events.some(e=>/FIREWALL/.test(e.text)));

@@ -109,6 +109,9 @@
  function territoryOf(layoutId,point){const layout=layouts[layoutId];return layout?.territories?.find(t=>pointInRect(point,t))?.team??null}
  // A team may build in its own territory, around checkpoints it holds, and around its
  // completed structures outside home (forward expansion).
+ // Distance from a point to the nearest road centreline, used to keep roads open for traffic.
+ function segDist(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((p.x-a[0])*dx+(p.y-a[1])*dy)/l));return Math.hypot(p.x-(a[0]+dx*t),p.y-(a[1]+dy*t))}
+ function clearOfRoads(layoutId,point,radius){const layout=layouts[layoutId];for(const road of layout?.roads||[])for(let i=1;i<road.points.length;i++)if(segDist(point,road.points[i-1],road.points[i])<road.width/2+radius*.55)return false;return true}
  function inBuildArea(layoutId,team,point,state={}){
   const layout=layouts[layoutId];if(!layout?.territories)return true;
   if(layout.territories.some(t=>t.team===team&&pointInRect(point,t)))return true;
@@ -215,5 +218,5 @@
  const theatre=id=>theatres[id]||theatres[theatreIds[0]];
  // Map metadata as a battle sees it: Safe Haven battles take the theatre's light and name.
  const forState=state=>{const base=get(state?.mapId);if(!['safe-haven','frontier'].includes(base.id)||!state?.theatreId)return base;const t=theatre(state.theatreId);return {...base,name:base.id==='frontier'?'Territory War · '+t.city:t.operation,theatre:t,atmosphere:{...base.atmosphere,...t.atmosphere}}};
- return Object.freeze({maps:Object.freeze(maps),layouts:Object.freeze(layouts),blockers,ids,get,defaultId:'coastal',theatres:Object.freeze(theatres),theatreIds,theatre,forState,territoryOf,inBuildArea,plotStatus,isTown:id=>id==='safe-haven'||id==='frontier'});
+ return Object.freeze({maps:Object.freeze(maps),layouts:Object.freeze(layouts),blockers,ids,get,defaultId:'coastal',theatres:Object.freeze(theatres),theatreIds,theatre,forState,territoryOf,clearOfRoads,inBuildArea,plotStatus,isTown:id=>id==='safe-haven'||id==='frontier'});
 });

@@ -8,7 +8,7 @@ Pick a mode on the Territory War card. All modes share the map, factions, econom
 
 | Mode | Sides | Objective | Defeat |
 |---|---|---|---|
-| Territory War | Either side; solo, co-op or up to 2v2 | Destroy the enemy HQ | Only when your HQ falls |
+| Territory War | Either side; solo, co-op or up to 2v2 | Defence: hold the line for **20 live minutes** or destroy the raider camp. Raiders: take the community HQ before time runs out | Defence: only if its HQ falls. Raiders: if time runs out or their camp falls |
 | Rescue Ops | Community Defence vs Raider AI (solo or co-op), 3 min prep | Eight residents start held at the raider camp; free them (rifle squad or patrol beside them for 2 s) and escort **six** home | HQ falls, or too few hostages remain alive to reach six |
 | Civilian Survival | Community Defence vs Raider AI (solo or co-op), 3 min prep | Survive 12 live minutes with at least **12 of 24** residents free (free, sheltered or rescued) | HQ falls, more than 12 residents killed, or fewer than 12 free at the end |
 
@@ -37,15 +37,26 @@ Each Territory War opens with a short camera fly-over from the enemy camp across
 
 Safe Haven uses the same timing: 5:00 preparation (3:00 configurable on the server), then a 2:00 warning before the first wave.
 
+## Tactics (`src/tactics.js`)
+
+| Feature | Detail |
+|---|---|
+| Guard stance | Idle combat units scan 300 px for enemy units, move in to engage and return to their post when the threat is gone or they are pulled 560 px away. **Hold** pins a unit in place; any other order returns it to guard. Not during the ceasefire. |
+| Eagle-Eye rocket pod | Scanners automatically fire anti-vehicle rockets (34 damage, splash) at any enemy vehicle within 300 px, wherever they are, every 2.2 s. Infantry is left to the rest of the army. |
+| Rally points | Select a production building or the HQ → **Rally point** → tap the map. New units head there instead of piling up at the door. |
+| Navigation | A 25 px grid of buildings, homes, market stalls and barricades with A* paths and stuck recovery; new units step out onto open ground. |
+| Barricades | 116 px walls, horizontal or vertical (**Rotate** button or **R** while placing). They block movement for everyone and may be placed across roads. |
+| Threat routes | Warnings and announced assaults draw animated red arrows along the attack road and pop up the route and the buildings most likely to be hit. Safe Haven's evacuation road gets teal arrows. |
+
 ## Construction (`public/catalog.js`)
 
 - Every faction starts with a deployed HQ, **two engineers** and three rifle squads. The HQ trains more engineers (120 CR, 6 s).
-- Tap **Build**, pick a category tab (Command / Defence / Production) and a structure. Large buildings snap to your highlighted plots; small defences go anywhere in your **build area**: your territory, within 260 px of a checkpoint you hold, or within 200 px of your completed forward structures.
+- Tap **Build**, pick a category tab (Command / Defence / Production) and a structure. Any building fits any free plot (resource sites included), or open ground anywhere in your **build area** (your territory, within 260 px of a checkpoint you hold, or within 200 px of your completed forward structures). Roads stay open: only barricades can be placed across them.
 - The nearest free engineer is assigned automatically; select engineers first to choose them. Engineers build different projects in parallel. Tap one of your unfinished buildings with engineers selected to **assist**: rate = Σ 0.65ⁱ (1×, 1.65×, 2.07×, 2.35× cap at four).
 
 | Category | Structures (raider name) | Notes |
 |---|---|---|
-| Command | Supply Depot (Supply Cache), Resource Collector (Scavenger Yard), Communications Centre (Radio Shack) | Depot +15 army cap (base 20, max 60); collector +6 CR/s on resource sites only; comms requires Barracks, adds energy and unlocks armour |
+| Command | Supply Depot (Supply Cache), Resource Collector (Scavenger Yard), Communications Centre (Radio Shack) | Depot +15 army cap (base 20, max 60); collector +5 CR/s anywhere, +8 on a resource site; comms requires Barracks, adds energy and unlocks armour |
 | Defence | Barricade, Guard Post (Lookout Post), Watchtower (Sniper Nest), Bunker (Dugout), Weapon Emplacement (Gun Pit), Civilian Shelter (defence only), Field Clinic (Aid Tent) | Bunker needs Barracks; emplacement needs Comms |
 | Production | Barracks (Training Camp) → infantry; Vehicle Workshop (Technical Yard) → patrol vehicles, scanners; Armoured Vehicle Factory (Heavy Garage) → tanks, rocket batteries | Workshop needs Barracks; factory needs Workshop + Comms |
 

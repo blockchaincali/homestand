@@ -45,7 +45,7 @@ const intel={
    this.teams[enemy].jammedUntil=this.time+HACK.duration;this.event('COMMUNICATIONS JAMMED',enemy);
    if(u.team===0){for(const mine of this.mines)if(mine.team===1)mine.revealed[0]=true;
     const ai=this.ais?.get(1),route=ai?.opening||(['north','central','south'][Math.floor(this.time)%3]);
-    if(this.territory){this.territory.threat={...(this.territory.threat||{}),route,confidence:'confirmed',intercepted:true}}
+    if(this.territory){this.territory.threat={...(this.territory.threat||{}),team:1,route,confidence:'confirmed',intercepted:true,targets:ai?this.likelyTargets(ai,route):[],path:ai?this.threatPath(ai,route):null,at:this.time}}
     this.event('INTERCEPT: RAIDER CHARGES EXPOSED - NEXT ASSAULT ON THE '+route.toUpperCase()+' ROUTE',0)}
    else this.event('RAIDERS ARE LISTENING - DEFENCE COMMS COMPROMISED',1);
   }

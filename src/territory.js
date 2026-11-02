@@ -66,10 +66,16 @@ const territory={
   const attacker=[...this.ais.values()].find(ai=>ai.team===1)||[...this.ais.values()][0];
   if(attacker){const route=attacker.planOpening(),reliable={recruit:1,standard:.75,veteran:0}[attacker.level]??.75,wrong=['north','central','south'].filter(r=>r!==route);
    const reported=Math.random()<reliable?route:attacker.level==='veteran'?null:wrong[Math.floor(Math.random()*wrong.length)];
-   t.threat={team:attacker.team,route:reported,confidence:attacker.level==='recruit'?'confirmed':attacker.level==='standard'?'likely':'unknown'};
+   t.threat={team:attacker.team,route:reported,confidence:attacker.level==='recruit'?'confirmed':attacker.level==='standard'?'likely':'unknown',targets:reported?this.likelyTargets(attacker,reported):[],path:reported?this.threatPath(attacker,reported):null,at:this.time};
    this.event((attacker.team===1?'RAIDER':'DEFENCE')+' FORCES ARE STAGING'+(reported?' - LIKELY ROUTE: '+reported.toUpperCase()+' ':' ')+'· ASSAULT IN 2:00',1-attacker.team);
   }else{t.threat={team:null,route:null,confidence:'none'};this.event('CEASEFIRE ENDS IN 2:00 - FINISH YOUR DEFENCES',null)}
  },
+ // Names of what an attack along a route is most likely to hit, for the warning banner.
+ likelyTargets(ai,route){const first=ai.pickTarget(route),end=ai.routePath(route).at(-1),list=[first,...this.facilities.filter(f=>f.hp>0&&f!==first).sort((a,b)=>Math.hypot(a.x-end.x,a.y-end.y)-Math.hypot(b.x-end.x,b.y-end.y)).slice(0,1)].filter(Boolean);return list.map(x=>this.targetName(x))},
+ // The road an attack will follow: attacker HQ → route waypoints → first likely target, for map arrows.
+ threatPath(ai,route,target=ai.pickTarget(route)){const hq=this.bases[ai.team],pts=[{x:hq.x,y:hq.y},...ai.routePath(route).map(p=>({x:p.x,y:p.y}))];if(target)pts.push({x:target.x,y:target.y});return pts.map(p=>({x:Math.round(p.x),y:Math.round(p.y)}))},
+ targetName(x){if(x.name)return x.name;if(x.kind==='hq')return CATALOG.name('hq',x.team);if(x.type)return CATALOG.name(x.type,x.team);return 'Checkpoint'},
+ reportThreat(team,route,confidence,targets){if(!this.territory)return;const ai=this.ais?.get(team),first=(targets||[]).find(x=>x&&typeof x==='object');this.territory.threat={team,route,confidence,targets:(targets||[]).filter(Boolean).map(x=>typeof x==='string'?x:this.targetName(x)),path:ai?this.threatPath(ai,route,first):null,at:this.time}},
  toLive(){const t=this.territory;t.stage='live';t.stageTime=0;this.event('CEASEFIRE OVER - THE BATTLE IS LIVE',null)},
  stepTerritory(dt){
   const t=this.territory;if(!t)return;t.stageTime+=dt;
@@ -84,28 +90,33 @@ const territory={
  },
  territoryIncome(seconds){
   for(let team=0;team<2;team++){const own=this.structures.filter(s=>s.team===team&&s.status==='active'&&s.hp>0&&!(s.hackedUntil>this.time)),checkpoints=this.nodes.filter(n=>n.owner===team).length;
-   const income=8+own.filter(s=>s.type==='collector').length*STRUCTURES.collector.income+checkpoints*4+(team===0&&this.facilities.some(f=>f.kind==='market'&&f.hp>0)?3:0);
+   const income=8+own.filter(s=>s.type==='collector').reduce((sum,s)=>sum+(L().plots.find(p=>p.id===s.plotId)?.kind==='resource'?STRUCTURES.collector.siteIncome:STRUCTURES.collector.income),0)+checkpoints*4+(team===0&&this.facilities.some(f=>f.kind==='market'&&f.hp>0)?3:0);
    this.teams[team].credits=Math.min(CREDIT_CAP,this.teams[team].credits+income*seconds);
    this.teams[team].energy=Math.min(180,this.teams[team].energy+(1+own.filter(s=>s.type==='comms').length*STRUCTURES.comms.energy)*seconds);
   }
  },
  // Finds the plot a large structure snaps to, validating ownership, occupancy and build area.
+ // Placement: any building fits any plot (resource sites included), or free ground anywhere in your
+ // territory / build area that keeps roads, homes and other buildings clear.
  resolvePlot(team,type,x,y,plotId){
-  const layout=L(),state={nodes:this.nodes,structures:this.structures};
-  const plot=plotId?layout.plots.find(p=>p.id===plotId):layout.plots.filter(p=>Math.hypot(p.x-x,p.y-y)<=p.r+20).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
-  if(!plot)return {ok:false,reason:'Large buildings must go on a construction plot'};
-  if(STRUCTURES[type].resourceOnly&&plot.kind!=='resource')return {ok:false,reason:'Collectors must be built on a resource site'};
-  if(!STRUCTURES[type].resourceOnly&&plot.kind==='resource')return {ok:false,reason:'Resource sites are reserved for collectors'};
-  const status=MAPS.plotStatus('frontier',plot,team,state);if(!status.ok)return status;
-  return {ok:true,plot};
+  const layout=L(),state={nodes:this.nodes,structures:this.structures},point={x:Number(x),y:Number(y)};
+  const plot=plotId?layout.plots.find(p=>p.id===plotId):layout.plots.filter(p=>Math.hypot(p.x-point.x,p.y-point.y)<=p.r+20).sort((a,b)=>Math.hypot(a.x-point.x,a.y-point.y)-Math.hypot(b.x-point.x,b.y-point.y))[0];
+  if(plot){const status=MAPS.plotStatus('frontier',plot,team,state);if(!status.ok)return status;return {ok:true,x:plot.x,y:plot.y,plotId:plot.id}}
+  return this.freeSite(team,type,point);
+ },
+ freeSite(team,type,point){
+  const def=STRUCTURES[type];
+  if(!MAPS.inBuildArea('frontier',team,point,{nodes:this.nodes,structures:this.structures}))return {ok:false,reason:'Build inside your territory, near a checkpoint you hold, or beside your forward structures'};
+  if(!MAPS.clearOfRoads('frontier',point,def.radius))return {ok:false,reason:'Keep the roads open - move off the road'};
+  return {ok:true,x:point.x,y:point.y,plotId:null};
  },
  territorySite(team,type,x,y,plotId){
   const def=STRUCTURES[type];if(!CATALOG.allowed(type,team))return {ok:false,reason:'Your faction cannot build that'};
   const missing=CATALOG.missing(type,this.builtTypes(team));if(missing.length)return {ok:false,reason:'Requires '+missing.map(m=>CATALOG.name(m,team)).join(' and ')};
-  if(def.size==='large'){const result=this.resolvePlot(team,type,x,y,plotId);if(!result.ok)return result;return {ok:true,x:result.plot.x,y:result.plot.y,plotId:result.plot.id}}
+  if(def.size==='large')return this.resolvePlot(team,type,x,y,plotId);
   const point={x:Number(x),y:Number(y)};
   if(!MAPS.inBuildArea('frontier',team,point,{nodes:this.nodes,structures:this.structures}))return {ok:false,reason:'Build inside your territory, near a checkpoint you hold, or beside your forward structures'};
-  if(L().plots.some(p=>Math.hypot(p.x-point.x,p.y-point.y)<p.r+def.radius-12))return {ok:false,reason:'Keep construction plots clear for large buildings'};
+  if(type!=='barricade'&&!MAPS.clearOfRoads('frontier',point,def.radius*.6))return {ok:false,reason:'Keep the roads open - only barricades go on a road'};
   return {ok:true,x:point.x,y:point.y,plotId:null};
  },
  assistStructure(team,structureId,builderIds){
@@ -125,7 +136,7 @@ const territory={
  },
  territorySnapshot(){
   const t=this.territory;if(!t)return null;
-  const remaining=t.stage==='prepare'?t.prepDuration-t.stageTime:t.stage==='warning'?t.warningDuration-t.stageTime:t.liveTime;
+  const remaining=t.stage==='prepare'?t.prepDuration-t.stageTime:t.stage==='warning'?t.warningDuration-t.stageTime:this.variant==='war'?Math.max(0,t.liveDuration-t.liveTime):t.liveTime;
   return {objective:t.objective||null,stage:t.stage,remaining:Math.max(0,Math.ceil(remaining)),prepDuration:t.prepDuration,warningDuration:t.warningDuration,liveDuration:t.liveDuration,winPoints:t.winPoints,threat:t.threat,ready:t.ready||null,readyBy:t.readyBy||[],skipBy:t.skipBy||[],
    ai:[...this.ais.values()].map(ai=>({team:ai.team,level:ai.level}))};
  }

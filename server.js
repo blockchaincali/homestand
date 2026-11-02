@@ -114,7 +114,8 @@ function action(ws,msg){
   case 'ping':return ping(ws,room,player,msg);
   case 'start':if(room.hostId!==player.id)return send(ws,{type:'error',message:'Only host can start'});outcome=game.start()?{ok:true}:{ok:false,reason:'Waiting for opposing commander'};break;
   case 'build':outcome=game.spawn(player.team,String(msg.unitType||''));break;
-  case 'construct':outcome=game.constructionSite(player.team,String(msg.structureType||''),msg.x,msg.y,msg.builderIds,msg.plotId?String(msg.plotId):null);break;
+  case 'construct':outcome=game.constructionSite(player.team,String(msg.structureType||''),msg.x,msg.y,msg.builderIds,msg.plotId?String(msg.plotId):null,msg.rot);break;
+  case 'rally':outcome=game.setRally(player.team,String(msg.structureId||''),msg.x,msg.y);break;
   case 'assist':outcome=game.assistStructure(player.team,String(msg.structureId||''),msg.builderIds);break;
   case 'produce':outcome=game.produce(player.team,String(msg.structureId||''),String(msg.unitType||''),msg.count);break;
   case 'cancelQueue':outcome=game.cancelQueue(player.team,String(msg.structureId||''));break;

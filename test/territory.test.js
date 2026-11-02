@@ -61,12 +61,13 @@ test('once live, units invade the opposing territory and attack its HQ with the 
  const before=hq.hp;run(g,4);assert.ok(hq.hp<before,'the raider HQ takes damage');
 });
 
-test('large buildings snap to your own plots; enemy plots, resource sites and missing tech are refused',()=>{
- const g=war();g.teams[0].credits=5000;g.teams[1].credits=5000;
- assert.match(g.constructionSite(0,'barracks',300,675).reason,/plot/);
+test('large buildings fit any free plot or open ground in your territory; enemy plots, roads and missing tech are refused',()=>{
+ const g=war();for(let i=0;i<4;i++)g.spawnAt(0,'engineer',300,560+i*30);g.teams[0].credits=5000;g.teams[1].credits=5000;
+ assert.match(g.constructionSite(0,'barracks',300,675).reason,/road/i,'never on the highway');
+ const open=g.constructionSite(0,'depot',200,1180);assert.equal(open.ok,true,open.reason);assert.equal(open.structure.plotId,null,'open ground works');
  assert.match(g.constructionSite(0,'barracks',plot('rA').x,plot('rA').y).reason,/other faction/);
- assert.match(g.constructionSite(0,'barracks',plot('res0').x,plot('res0').y).reason,/collectors/i);
- assert.match(g.constructionSite(0,'collector',plot('dA').x,plot('dA').y).reason,/resource site/);
+ const anywhere=g.constructionSite(0,'collector',plot('dJ').x,plot('dJ').y);assert.equal(anywhere.ok,true,'a collector fits an ordinary plot');
+ assert.match(g.constructionSite(0,'barracks',2000,980).reason,/territory|other faction/);
  assert.match(g.constructionSite(0,'workshop',plot('dA').x,plot('dA').y).reason,/Requires Barracks/);
  const barracks=g.constructionSite(0,'barracks',plot('dA').x+20,plot('dA').y-10);assert.equal(barracks.ok,true,barracks.reason);assert.equal(barracks.structure.x,plot('dA').x);assert.equal(barracks.structure.plotId,'dA');
  assert.match(g.constructionSite(0,'depot',plot('dA').x,plot('dA').y).reason,/already built/);
@@ -76,11 +77,12 @@ test('large buildings snap to your own plots; enemy plots, resource sites and mi
  assert.equal(g.constructionSite(1,'shelter',2000,400).reason,'Your faction cannot build that');
 });
 
-test('small defences go anywhere in your build area but never on plots or across the border',()=>{
- const g=war();g.teams[0].credits=5000;
+test('small defences go anywhere in your build area (plots included) but not across the border or on roads',()=>{
+ const g=war();for(let i=0;i<4;i++)g.spawnAt(0,'engineer',300,560+i*30);g.teams[0].credits=5000;
  assert.equal(g.constructionSite(0,'barricade',200,1180).ok,true);
  assert.match(g.constructionSite(0,'barricade',2000,980).reason,/territory/);
- assert.match(g.constructionSite(0,'barricade',plot('dB').x,plot('dB').y).reason,/plots clear/);
+ assert.equal(g.constructionSite(0,'guardpost',plot('dB').x,plot('dB').y).ok,true,'plots take any building');
+ assert.match(g.constructionSite(0,'guardpost',500,675).reason,/road/i);assert.equal(g.constructionSite(0,'barricade',560,675).ok,true,'barricades may block a road');
  assert.match(g.constructionSite(0,'barricade',1200,675).reason,/territory|blocked/);
 });
 
@@ -158,8 +160,28 @@ test('buildings take a production quantity, pay per unit as each starts, and wai
  const snap=g.snapshot();assert.ok(Array.isArray(snap.structures.find(s=>s.id===barracks.id).queue));
 });
 
-test('only destroying an HQ ends a territory war - score and time never do',()=>{
- const g=war();g.completeTraining(0);g.completeTraining(1);run(g,120.2);g.teams[1].points=99999;g.territory.liveTime=99999;run(g,1);assert.equal(g.phase,'playing');
+test('Territory War: the raiders must take the HQ in time - the defence wins by holding the line',()=>{
+ const g=war();g.completeTraining(0);g.completeTraining(1);run(g,120.2);g.teams[1].points=99999;run(g,1);assert.equal(g.phase,'playing','score never ends it');
  for(const f of g.facilities)g.applyDamage(f,f.hp+1,1);assert.equal(g.phase,'playing','losing every civilian site is not a defeat');
- const hq=g.bases.find(b=>b.team===1);g.applyDamage(hq,hq.hp+1,0);assert.deepEqual(g.win,{team:0,reason:'RAIDER CAMP DESTROYED'});
+ assert.equal(g.snapshot().territory.objective.mode,'war');assert.ok(g.snapshot().territory.remaining<=20*60);
+ g.territory.liveTime=20*60;run(g,.1);assert.equal(g.win.team,0);assert.match(g.win.reason,/HELD THE LINE/);
+ const h=war();h.completeTraining(0);h.completeTraining(1);run(h,120.2);const hq=h.bases.find(b=>b.team===1);h.applyDamage(hq,hq.hp+1,0);assert.deepEqual(h.win,{team:0,reason:'RAIDER CAMP DESTROYED'});
+ const r=war();r.completeTraining(0);r.completeTraining(1);run(r,120.2);const home=r.bases.find(b=>b.team===0);r.applyDamage(home,home.hp+1,1);assert.equal(r.win.team,1,'raiders win only by taking the community HQ');
+});
+
+test('the Eagle-Eye fires rockets at enemy vehicles within range on its own, but not at infantry or in the ceasefire',()=>{
+ const g=war();const scanner=g.spawnAt(0,'scanner',600,500);scanner.hold=true;scanner.order='hold';
+ const tank=g.spawnAt(1,'tank',600+280,500);tank.hold=true;tank.order='hold';
+ run(g,1);assert.ok(!g.projectiles.some(p=>p.sourceId===scanner.id),'ceasefire');
+ g.territory.stage='live';g.projectiles=[];run(g,.1);const rocket=g.projectiles.find(p=>p.sourceId===scanner.id);
+ assert.ok(rocket,'rocket launched at 280px');assert.equal(rocket.type,'rocket');assert.equal(rocket.targetId,tank.id);
+ g.units=g.units.filter(u=>u!==tank);g.projectiles=[];const rifle=g.spawnAt(1,'rifle',600+250,500);rifle.hold=true;scanner.rocketCd=0;run(g,.1);
+ assert.ok(!g.projectiles.some(p=>p.sourceId===scanner.id&&p.type==='rocket'),'infantry is not a rocket target');
+});
+
+test('threat reports carry the route path and the names of the likely targets',()=>{
+ const g=new Game({mode:'solo',scenario:'territory',difficulty:'recruit',prepMinutes:3,theatreId:'jos'});g.addParticipant('h','H',0);g.addParticipant('ai','AI',1,true);g.start();
+ g.completeTraining(0,'h');const threat=g.snapshot().territory.threat;
+ assert.ok(threat.route);assert.ok(threat.targets.length>=1&&threat.targets.every(n=>typeof n==='string'&&n.length));
+ assert.ok(threat.path.length>=4);assert.equal(threat.path[0].x,g.bases[1].x,'starts at the raider camp');
 });

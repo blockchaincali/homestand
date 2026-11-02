@@ -12,7 +12,7 @@
  const STRUCTURES={
   // Command and infrastructure
   depot:{label:'Supply Depot',raider:'Supply Cache',category:'command',size:'large',cost:100,buildTime:8,hp:520,radius:40,supply:15,icon:'supply',role:'+15 army capacity'},
-  collector:{label:'Resource Collector',raider:'Scavenger Yard',category:'command',size:'large',cost:140,buildTime:10,hp:560,radius:42,income:6,resourceOnly:true,icon:'credits',role:'+6 credits/s on a resource site'},
+  collector:{label:'Resource Collector',raider:'Scavenger Yard',category:'command',size:'large',cost:140,buildTime:10,hp:560,radius:42,income:5,siteIncome:8,icon:'credits',role:'+5 credits/s anywhere · +8 on a resource site'},
   comms:{label:'Communications Centre',raider:'Radio Shack',category:'command',size:'large',cost:160,buildTime:10,hp:600,radius:42,requires:['barracks'],energy:1.2,produces:['hacker'],icon:'intel',role:'Unlocks armour and emplacements · trains hackers · +energy'},
   // Defence
   barricade:{label:'Barricade',raider:'Barricade',category:'defence',size:'small',cost:55,buildTime:4,hp:520,radius:34,icon:'barricade',role:'Blocks hostile vehicles and protects a lane'},
