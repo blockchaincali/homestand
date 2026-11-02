@@ -26,9 +26,25 @@ Register the game address with Vatar as `https://<host>/?host=vatar`. When the p
 - **Leaderboard:** each finished match submits one whole-number score: `(win 1000 | loss 150) + 150 × stars + 6 × kills + civilian score`, × 1 / 1.5 / 2.2 for Easy / Standard / Veteran. Civilian score: defence +20 per resident still free, +60 per rescue, −40 per resident killed by your fire; raiders +40 per resident seized. The board keeps each player's best. The Missions page shows the top 10 and your rank.
 - **Identity data:** only the pseudonymous per-game id, display name and avatar (Developer Agreement §8). Nothing else is requested or stored server-side.
 
+## Lagos Life edition (softer content)
+
+Inside Lagos Life (or with `?edition=lagoslife` to preview anywhere), the game runs the **Lagos Life edition**. Gameplay is identical; only what players read changes:
+
+| Standard build | Lagos Life edition |
+| --- | --- |
+| Real cities and districts (Abuja, Kano, Maiduguri, Nyanya, Baga …) and streets named after real people | Fictional towns (Kauna, Birnin Kasuwa, Garin Haske, Gidan Ruwa …) and generic street names |
+| IED / bomb / charge | Trap |
+| Raiders seize civilians, captives held at the raider camp, ransom | Raiders cut residents off, residents stranded behind raider lines, toll |
+| Civilian casualties / killed | Injuries / injured |
+
+The server stores the edition with the room (`create` → `edition`), so every event, facility name and result line is softened at the source; the client softens its own menus, HUD and toasts. Mapping lives in `public/maps.js` (`FICTION`, `SOFT`, `soften`, `theatre(id, edition)`); `test/edition.test.js` checks no real place name survives.
+
+## Portrait phones
+
+At phone width in portrait (Vatar tests at 375 × 812, no fullscreen) the battle works upright: no rotate prompt, the build menu and building controls open as bottom sheets above the command bar, and the ready banner leaves room for the camera buttons.
+
 ## Not built yet (waiting on Vatar's answers)
 
 - Purchases (`Vatar.purchase`) and the server `/claim` + webhook. If added, cosmetics only, never gameplay advantage.
 - `Vatar.match` for multiplayer; rooms currently use HOMESTAND's own server and 4-letter codes.
-- A portrait battle layout, if landscape is not accepted (the docs test at 375 × 812 portrait).
-- Any content changes Vatar requests under Agreement §4.
+- Any further content changes Vatar requests under Agreement §4.

@@ -26,7 +26,7 @@ const territory={
   this.teams=[0,1].map(()=>({credits:600,energy:100,points:0,kills:0,powerCooldown:0}));
   this.nodes=layout.checkpointNodes.map(n=>({...n,owner:-1,progress:0}));
   this.bases=layout.hq.map((p,team)=>({id:'hq'+team,kind:'hq',team,x:p.x,y:p.y,hp:2200,maxHp:2200,radius:58,cd:0,range:200,production:null}));
-  this.facilities=layout.facilities.map(f=>({id:f.id,kind:f.kind,team:0,x:f.x,y:f.y,hp:f.outpost?OUTPOST_HP:FACILITY_HP[f.kind],maxHp:f.outpost?OUTPOST_HP:FACILITY_HP[f.kind],radius:f.outpost?42:46,outpost:Boolean(f.outpost),name:T?.facilities[f.slot]||OUTPOST_NAMES[f.slot]||f.slot}));
+  this.facilities=layout.facilities.map(f=>({id:f.id,kind:f.kind,team:0,x:f.x,y:f.y,hp:f.outpost?OUTPOST_HP:FACILITY_HP[f.kind],maxHp:f.outpost?OUTPOST_HP:FACILITY_HP[f.kind],radius:f.outpost?42:46,outpost:Boolean(f.outpost),name:T?.facilities[f.slot]||this.soft(OUTPOST_NAMES[f.slot]||f.slot)}));
   this.caches=[{id:'cache-credits',kind:'cache',reward:'credits',x:1330,y:560,radius:26,claimedBy:null},{id:'cache-energy',kind:'cache',reward:'energy',x:1070,y:560,radius:26,claimedBy:null},{id:'cache-repair',kind:'cache',reward:'repair',x:1330,y:790,radius:26,claimedBy:null}];
   this.territory={stage:'prepare',stageTime:0,prepDuration:this.prepMinutes*60,warningDuration:WARNING_SECONDS,liveTime:0,liveDuration:LIVE_SECONDS,winPoints:WIN_POINTS,threat:null,lost:[0,0]};
   this.ais=new Map();

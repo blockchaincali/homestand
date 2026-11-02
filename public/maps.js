@@ -215,8 +215,28 @@
    radio:['Maiduguri no go fall! Hold Monday Market!','Vigilante team for Gwange don join — dem dey your left flank.','Allah ya kiyaye — scanner, sweep di Kano Road now!']}
  };
  const theatreIds=Object.freeze(Object.values(theatres).sort((a,b)=>a.order-b.order).map(t=>t.id));
- const theatre=id=>theatres[id]||theatres[theatreIds[0]];
+ // ---------- Lagos Life edition ----------
+ // Inside Vatar's Lagos Life the game runs a softer presentation: fictional towns instead of real
+ // northern cities and people, and gentler words for traps, stranded residents and injuries.
+ // Gameplay is identical; only names and wording change. The standalone build is untouched.
+ const FICTION=[['Ahmadu Bello Way','Freedom Way'],['Kashim Ibrahim Way','Lakeside Way'],['Mohammed Way','Market Way'],["Shehu's Palace",'Old Palace'],['Murtala','Harmony'],['Lugard','Council'],['Barau Dikko','Riverside'],['Rwang Pam','Unity'],['UMTH Maiduguri','Garin Haske Teaching Hospital'],['UMTH','Teaching Hospital'],
+  ['Abuja','Kauna'],['FCT','Central Territory'],['Kaduna','Rimaye'],['Jos','Tsauni'],['Plateau','Highland'],['Kano','Birnin Kasuwa'],['Damaturu','Yamma'],['Yobe','Sahel Province'],['Maiduguri','Garin Haske'],['Borno','Lake Province'],
+  ['Nyanya','Gidan Ruwa'],['Karu','Tudun Fari'],['Keffi','Gabas'],['AYA','Kofa'],['Kugbo','Rafin Kasa'],['Kawo','Gamji'],['Ungwan Rimi','Sabon Layi'],['Kakuri','Masana'],['Malali','Tudun Iska'],['Zaria','Arewa'],
+  ['Terminus','Central'],['Rayfield','Greenfield'],['Shere','Iska'],['Bukuru','Kufai'],['Tudun Wada','Tudun Kasa'],['Rafin Gari','Rafin Fari'],['Kofar Mata','Kofar Gabas'],['Kofar Nassarawa','Kofar Tsakiya'],['Nassarawa','Tsakiya'],['Kurmi','Kasuwar Fari'],['Dala','Kogo'],['Sabon Gari','Sabon Layi'],['Bata','Dorawa'],['Kantin Kwari','Cloth Market'],
+  ['Pompomari','Yalwa'],['Nayinawa','Zango Fari'],['Potiskum','Rimin Gabas'],['Gujba','Tsamiya'],['Monday Market','Kasuwar Litinin'],['Gwange','Gidan Wuta'],['Bulumkutu','Bakin Rafi'],['Baga','Gabar Tafki'],['Muna','Tsauni Gabas'],['Kano Custom','Customs']];
+ const SOFT=[['IED DETONATED','TRAP SPRUNG'],['improvised explosive devices','traps'],['improvised explosive device','trap'],['IEDs','traps'],['IED','trap'],['explosive charges','traps'],['charges','traps'],['charge','trap'],['bombs','traps'],['bomb','trap'],
+  ['TAKEN TO THE RAIDER CAMP','STRANDED BEHIND RAIDER LINES'],['hostages','stranded residents'],['hostage','stranded resident'],['captives','stranded residents'],['captive','stranded resident'],['seizing','cutting off'],['seized','cut off'],['seize','cut off'],['ransom','toll'],
+  ['snatch teams','raiding parties'],['snatch team','raiding party'],['snatch','raid'],['casualties','injuries'],['casualty','injury'],['killed','injured'],['terrorists','raiders'],['terrorist','raider'],['insurgents','raiders']];
+ const escapeRe=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ const compile=list=>[...list].sort((a,b)=>b[0].length-a[0].length).map(([from,to])=>[new RegExp('(^|[^A-Za-z])('+escapeRe(from)+')(?![A-Za-z])','gi'),to]);
+ const FICTION_RE=compile(FICTION),SOFT_RE=compile(SOFT);
+ const caseLike=(match,to,shouting)=>match===match.toUpperCase()&&/[A-Z]/.test(match)?(shouting||match.length>3?to.toUpperCase():to[0].toUpperCase()+to.slice(1)):match[0]===match[0].toUpperCase()?to[0].toUpperCase()+to.slice(1):to;
+ function soften(text){if(typeof text!=='string'||!text)return text;const shouting=text===text.toUpperCase()&&/[A-Z]{3}/.test(text)&&/\s/.test(text.trim());let out=text;for(const list of [FICTION_RE,SOFT_RE])for(const [re,to] of list)out=out.replace(re,(all,lead,match)=>lead+caseLike(match,to,shouting));return out}
+ const softenDeep=value=>typeof value==='string'?soften(value):Array.isArray(value)?value.map(softenDeep):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,['id','look','atmosphere','threat','landmark'].includes(k)?v:softenDeep(v)])):value;
+ let currentEdition='standard';const softTheatres={};
+ const setEdition=value=>{currentEdition=value==='lagoslife'?'lagoslife':'standard';return currentEdition};
+ const theatre=(id,edition=currentEdition)=>{const base=theatres[id]||theatres[theatreIds[0]];if(edition!=='lagoslife')return base;return softTheatres[base.id]||(softTheatres[base.id]=Object.freeze(softenDeep(base)))};
  // Map metadata as a battle sees it: Safe Haven battles take the theatre's light and name.
  const forState=state=>{const base=get(state?.mapId);if(!['safe-haven','frontier'].includes(base.id)||!state?.theatreId)return base;const t=theatre(state.theatreId);return {...base,name:base.id==='frontier'?'Territory War · '+t.city:t.operation,theatre:t,atmosphere:{...base.atmosphere,...t.atmosphere}}};
- return Object.freeze({maps:Object.freeze(maps),layouts:Object.freeze(layouts),blockers,ids,get,defaultId:'coastal',theatres:Object.freeze(theatres),theatreIds,theatre,forState,territoryOf,clearOfRoads,inBuildArea,plotStatus,isTown:id=>id==='safe-haven'||id==='frontier'});
+ return Object.freeze({maps:Object.freeze(maps),layouts:Object.freeze(layouts),blockers,ids,get,defaultId:'coastal',theatres:Object.freeze(theatres),theatreIds,theatre,soften,setEdition,edition:()=>currentEdition,forState,territoryOf,clearOfRoads,inBuildArea,plotStatus,isTown:id=>id==='safe-haven'||id==='frontier'});
 });

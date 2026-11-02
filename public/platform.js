@@ -15,10 +15,14 @@
  // The address registered with Vatar carries ?host=vatar; ancestorOrigins confirms it where browsers expose it.
  const vatarHost=framed&&(params.get('host')==='vatar'||ancestors.some(origin=>VATAR_ORIGINS.includes(origin)));
  const store=key=>{try{return localStorage.getItem(key)}catch{return null}};
+ // The Lagos Life edition (fictional places, gentler wording) is on inside Vatar, or with ?edition=lagoslife to preview it.
+ const edition=vatarHost||params.get('edition')==='lagoslife'?'lagoslife':'standard';
+ root.IronMaps?.setEdition?.(edition);
 
  const platform={
   id:'standalone',
   framed,
+  edition,
   // Display identity. Standalone uses the name typed on the home screen; Vatar supplies a verified one.
   identity:null,
   player(){return platform.identity?{...platform.identity,verified:true}:{name:store('iron-frontier-name')||'Commander',verified:false}},

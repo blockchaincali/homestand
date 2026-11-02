@@ -600,3 +600,26 @@ body:not(.in-battle) .target-alert{display:none}
 .host-board ol{margin:8px 0 0;padding-left:22px;display:grid;gap:4px;font-size:13px}
 .host-board li{display:flex;justify-content:space-between;gap:12px}.host-board li b{font-variant-numeric:tabular-nums}
 .host-board .board-me{margin:8px 0 0;font-weight:700;color:#9fe3f2}
+
+/* ---------- Portrait phones (Lagos Life tests at 375 × 812, no fullscreen) ---------- */
+@media (max-width:520px) and (orientation:portrait){
+ .landscape-suggestion{display:none!important}
+ .prep-banner{left:calc(var(--sal) + var(--edge));right:calc(var(--sar) + var(--edge) + 58px);justify-content:space-between}
+ .prep-banner small,.prep-banner .prep-meta{display:none}
+ .battle-shell:has(.construction-bar.open) .prep-banner,.battle-shell:has(.structure-context:not(.hidden)) .prep-banner{display:none}
+ /* Build menu and building controls become bottom sheets above the command bar. */
+ .construction-bar.open,.structure-context:not(.hidden){position:fixed;z-index:20;left:calc(var(--sal) + 8px);right:calc(var(--sar) + 8px);bottom:calc(var(--sab) + 128px);max-width:none!important;max-height:46vh;overflow-y:auto;overscroll-behavior:contain;flex-wrap:wrap;align-items:stretch;padding:8px;gap:6px;background:rgba(4,14,18,.94)}
+ .construction-bar.tabbed .build-tabs{flex-direction:row;width:100%;border:0;position:sticky;top:0;z-index:1;background:rgba(4,14,18,.97);padding-bottom:4px}
+ .construction-bar.tabbed .build-tab{flex:1;text-align:center}
+ .construction-bar.open .structure-card{flex:1 1 calc(50% - 6px)!important;min-width:0}
+ .construction-bar.open .dock-close{position:absolute;top:6px;right:6px}
+ .structure-context:not(.hidden) .context-head{flex:1 1 100%;min-width:0;padding-right:40px}
+ .structure-context:not(.hidden) .qty-control{flex:1 1 100%;justify-content:flex-start}
+ .structure-context:not(.hidden) .ctx-btn{flex:1 1 calc(50% - 6px);min-width:0}
+ .structure-context:not(.hidden) #structure-close,.structure-context:not(.hidden) .dock-close{position:absolute;top:6px;right:6px}
+ .placement-panel{bottom:calc(var(--sab) + 128px)}
+ .target-alert{top:calc(var(--sat) + 190px)}
+ .briefing{top:auto;bottom:calc(var(--sab) + 210px);left:calc(var(--sal) + 8px);right:calc(var(--sar) + 66px);width:auto}
+ .comms{bottom:calc(var(--sab) + 210px);width:calc(100vw - 90px)}
+ body.in-battle .toast{top:calc(var(--sat) + 150px);bottom:auto}
+}
