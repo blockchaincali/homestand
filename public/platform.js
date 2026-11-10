@@ -7,8 +7,9 @@
  'use strict';
  if(root.HomestandPlatform)return;
  const listeners=new Map();
- const VATAR_SDK='https://lagoslife.app/sdk/vatar-games-v1.js';
- const VATAR_ORIGINS=['https://lagoslife.app','https://www.lagoslife.app','https://naijalife.app','https://www.naijalife.app','https://lagoslife.eliysites.com'];
+ // The SDK is served from Lagos Life; vatarverse.com is the newer home, tried if the first fails.
+ const VATAR_SDKS=['https://lagoslife.app/sdk/vatar-games-v1.js','https://vatarverse.com/sdk/vatar-games-v1.js'];
+ const VATAR_ORIGINS=['https://lagoslife.app','https://www.lagoslife.app','https://naijalife.app','https://www.naijalife.app','https://lagoslife.eliysites.com','https://vatarverse.com','https://www.vatarverse.com'];
  const framed=(()=>{try{return root.self!==root.top}catch{return true}})();
  const params=new URLSearchParams(root.location?.search||'');
  const ancestors=[...(root.location?.ancestorOrigins||[])];
@@ -39,9 +40,10 @@
 
  // ---------- Vatar (Lagos Life) adapter ----------
  platform.ready=new Promise(resolve=>{
-  const script=document.createElement('script');script.src=VATAR_SDK;script.async=true;
   const fail=reason=>{console.warn('Vatar SDK unavailable - running standalone:',reason);resolve(null)};
-  script.onerror=()=>fail('script failed to load');
+  const load=index=>{
+  const script=document.createElement('script');script.src=VATAR_SDKS[index];script.async=true;
+  script.onerror=()=>index+1<VATAR_SDKS.length?load(index+1):fail('script failed to load');
   script.onload=async()=>{
    const Vatar=root.Vatar;if(!Vatar?.init)return fail('no SDK object');
    try{
@@ -58,5 +60,7 @@
    }catch(error){fail(error?.code||error?.message||error)}
   };
   document.head.append(script);
+  };
+  load(0);
  });
 })(typeof globalThis!=='undefined'?globalThis:this);

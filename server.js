@@ -28,7 +28,7 @@ function serveFile(req,res,filePath,cacheControl){
  })
 }
 // FRAME_ANCESTORS_EXTRA (space-separated origins) lets a local test harness frame the game; unset in production.
-const FRAME_POLICY="frame-ancestors 'self' https://lagoslife.app https://www.lagoslife.app https://naijalife.app https://www.naijalife.app https://lagoslife.eliysites.com"+(process.env.FRAME_ANCESTORS_EXTRA?' '+process.env.FRAME_ANCESTORS_EXTRA.split(/\s+/).filter(o=>/^https?:\/\/[a-z0-9.:-]+$/i.test(o)).join(' '):'');
+const FRAME_POLICY="frame-ancestors 'self' https://lagoslife.app https://www.lagoslife.app https://naijalife.app https://www.naijalife.app https://lagoslife.eliysites.com https://vatarverse.com https://www.vatarverse.com"+(process.env.FRAME_ANCESTORS_EXTRA?' '+process.env.FRAME_ANCESTORS_EXTRA.split(/\s+/).filter(o=>/^https?:\/\/[a-z0-9.:-]+$/i.test(o)).join(' '):'');
 const contentType={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.webmanifest':'application/manifest+json'};
 const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://localhost').pathname;

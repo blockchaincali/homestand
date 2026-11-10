@@ -20,7 +20,7 @@ Register the game address with Vatar as `https://<host>/?host=vatar`. When the p
 
 ## Behaviour inside the frame
 
-- **Framing:** every HTML response sends `Content-Security-Policy: frame-ancestors 'self'` plus the five Vatar origins; no `X-Frame-Options`. `FRAME_ANCESTORS_EXTRA` adds origins for a local test harness only.
+- **Framing:** every HTML response sends `Content-Security-Policy: frame-ancestors 'self'` plus the Vatar origins (lagoslife.app, naijalife.app, vatarverse.com and their www hosts, lagoslife.eliysites.com); no `X-Frame-Options`. `FRAME_ANCESTORS_EXTRA` adds origins for a local test harness only.
 - **Pause:** `onPause` suspends audio and, for a match with exactly one human, sends `{type:'pause'}`: the server stops stepping that room. `onResume` (or reconnecting) resumes it. Co-op and versus never pause.
 - **Not used when framed:** service worker, install prompt, fullscreen and orientation lock, clipboard (room codes are shown instead).
 - **Leaderboard:** each finished match submits one whole-number score: `(win 1000 | loss 150) + 150 × stars + 6 × kills + civilian score`, × 1 / 1.5 / 2.2 for Easy / Standard / Veteran. Civilian score: defence +20 per resident still free, +60 per rescue, −40 per resident killed by your fire; raiders +40 per resident seized. The board keeps each player's best. The Missions page shows the top 10 and your rank.
