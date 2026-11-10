@@ -523,7 +523,7 @@ body.offline .resource-strip{border-color:rgba(255,106,92,.6)}
 @keyframes ember{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-140px);opacity:0}}
 @keyframes pulseVs{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.92)}}
 @keyframes sheen{0%{background-position:120% 0}60%,100%{background-position:-120% 0}}
-@media (max-width:640px){.live-front{grid-template-columns:1fr 1fr}.versus{display:none}.faction-banner{min-height:104px}}
+@media (max-width:640px){.faction-banner i{display:none}.live-front{grid-template-columns:1fr 1fr}.versus{display:none}.faction-banner{min-height:104px}}
 @media (prefers-reduced-motion:reduce){.faction-banner::before,.faction-banner .ember,.versus,.live-dot::before,.territory-card::before{animation:none}}
 @media (max-height:480px){.faction-banner{min-height:86px;padding:10px 12px}.faction-banner span:not(.ember){display:none}}
 
@@ -622,4 +622,5 @@ body:not(.in-battle) .target-alert{display:none}
  .briefing{top:auto;bottom:calc(var(--sab) + 210px);left:calc(var(--sal) + 8px);right:calc(var(--sar) + 66px);width:auto}
  .comms{bottom:calc(var(--sab) + 210px);width:calc(100vw - 90px)}
  body.in-battle .toast{top:calc(var(--sat) + 150px);bottom:auto}
+ #mission-progress{white-space:normal;line-height:1.2;text-align:center;max-width:42vw}
 }
