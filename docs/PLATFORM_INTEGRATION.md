@@ -43,8 +43,19 @@ The server stores the edition with the room (`create` → `edition`), so every e
 
 At phone width in portrait (Vatar tests at 375 × 812, no fullscreen) the battle works upright: no rotate prompt, the build menu and building controls open as bottom sheets above the command bar, and the ready banner leaves room for the camera buttons.
 
-## Not built yet (waiting on Vatar's answers)
+## Purchases (cosmetic only)
 
-- Purchases (`Vatar.purchase`) and the server `/claim` + webhook. If added, cosmetics only, never gameplay advantage.
+One product, `gold_badge` (Gold Commander badge): a gold star and trim on the commander name. It never changes gameplay.
+
+1. The Missions page shows the badge card when the host supports purchases. **Get badge** calls `Vatar.purchase('gold_badge')`.
+2. The client sends `{session, purchaseId}` to `POST /api/claim` (fresh token from `Vatar.session()`).
+3. `src/vatar.js` verifies the session (`POST /session/verify`), fetches the purchase (`GET /purchases/{id}`), checks product, player, mode and status, grants once per purchase id, then `POST /purchases/{id}/deliver`. All calls use `Authorization: Bearer $VATAR_SECRET`.
+4. On start the client calls `POST /api/entitlements` and claims anything `Vatar.purchases()` still lists; `Vatar.onPurchase` claims late confirmations.
+5. Optional webhook `POST /api/vatar/webhook`: HMAC-SHA256 of the raw body with `VATAR_WEBHOOK_SECRET`, compared in constant time; answered at once, then the purchase is re-checked with Vatar before granting.
+
+Entitlements are saved to `$DATA_DIR/entitlements.json` (default `./data`). On Railway, mount a volume and set `DATA_DIR` to its path, or owned badges are forgotten on redeploy (a player can still recover: buying again returns `owned`, which re-checks).
+
+## Not built yet
+
 - `Vatar.match` for multiplayer; rooms currently use HOMESTAND's own server and 4-letter codes.
 - Any further content changes Vatar requests under Agreement §4.

@@ -32,6 +32,10 @@
   // What the host allows. Framed pages get no fullscreen, popups, clipboard or install prompt.
   capabilities:{accounts:false,purchases:false,leaderboards:false,share:!framed&&typeof navigator!=='undefined'&&Boolean(navigator.share),install:!framed,fullscreen:!framed,clipboard:!framed},
   submitScore:async()=>null,
+  // Purchases: session() gives a fresh token for our server; purchase() opens the host's pay sheet.
+  session:async()=>null,
+  purchase:async()=>{throw Object.assign(new Error('unsupported'),{code:'unsupported'})},
+  unclaimedPurchases:async()=>[],
   leaderboard:async()=>null,
   ready:Promise.resolve(null)
  };
@@ -47,10 +51,15 @@
   script.onload=async()=>{
    const Vatar=root.Vatar;if(!Vatar?.init)return fail('no SDK object');
    try{
-    const {player,mode}=await Vatar.init();
+    const {player,mode,session}=await Vatar.init();let token={session,at:Date.now()};
     platform.id='vatar';platform.mode=mode;
     platform.identity={id:player.id,name:String(player.name||'Commander').slice(0,18),avatar:player.avatar||null};
-    platform.capabilities={...platform.capabilities,accounts:true,leaderboards:true};
+    platform.capabilities={...platform.capabilities,accounts:true,leaderboards:true,purchases:typeof Vatar.purchase==='function'};
+    // Tokens last 15 minutes: reuse the init token briefly, otherwise ask for a fresh one.
+    platform.session=async()=>{if(token.session&&Date.now()-token.at<60000)return token.session;const fresh=await Vatar.session();token={session:fresh?.session||fresh,at:Date.now()};return token.session};
+    platform.purchase=productId=>Vatar.purchase(productId);
+    platform.unclaimedPurchases=()=>Promise.resolve(Vatar.purchases?.()).then(list=>Array.isArray(list)?list:list?.purchases||[]).catch(()=>[]);
+    Vatar.onPurchase?.(p=>platform.emit('purchase',p));
     // Scores: whole numbers, one submission per 20 s (the SDK enforces it); the board keeps each player's best.
     platform.submitScore=n=>Vatar.submitScore(Math.max(0,Math.round(Number(n)||0))).catch(error=>{console.warn('Score not submitted',error?.code||error);return null});
     platform.leaderboard=()=>Vatar.leaderboard().catch(error=>{console.warn('Leaderboard unavailable',error?.code||error);return null});

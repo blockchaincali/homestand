@@ -3,6 +3,8 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),
 const {WebSocket,WebSocketServer}=require('ws');
 const {Game}=require('./src/engine');
 const {get:getMap}=require('./public/maps');
+const {createVatar}=require('./src/vatar');
+const vatar=createVatar();
 const PORT=Number(process.env.PORT||3000),rooms=new Map(),STEP=0.05;
 const uid=()=>crypto.randomBytes(9).toString('hex');
 const newCode=()=>Array.from(crypto.randomBytes(4),n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%32]).join('');
@@ -33,11 +35,39 @@ const contentType={'.html':'text/html; charset=utf-8','.css':'text/css; charset=
 const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://localhost').pathname;
  if(vendorFiles[pathname])return serveFile(req,res,path.join(__dirname,'node_modules',...vendorFiles[pathname]),'public, max-age=604800');
+ if(pathname.startsWith('/api/'))return handleApi(req,res,pathname);
  if(pathname==='/healthz'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({status:'ok',game:'HOMESTAND',rooms:rooms.size}))}
  const file=staticFiles[pathname];if(!file){res.writeHead(404);return res.end('Not found')}
  // The service worker must always be revalidated so new deploys take over promptly.
  serveFile(req,res,path.join(__dirname,'public',file),file==='sw.js'?'no-cache':'public,max-age=60')
 });
+// ---------- Vatar purchases (cosmetics only) ----------
+// /api/claim and /api/entitlements take {session} from Vatar.session(); the server verifies it with
+// Vatar before anything is granted. /api/vatar/webhook takes Vatar's signed purchase.paid nudge.
+const apiHits=new Map();
+function readBody(req,limit=8192){return new Promise((resolve,reject)=>{const chunks=[];let size=0;req.on('data',c=>{size+=c.length;if(size>limit){reject(Object.assign(new Error('too_large'),{status:413}));req.destroy()}else chunks.push(c)});req.on('end',()=>resolve(Buffer.concat(chunks)));req.on('error',reject)})}
+function apiReply(res,status,body){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(body))}
+async function handleApi(req,res,pathname){
+ if(req.method!=='POST')return apiReply(res,405,{error:'method_not_allowed'});
+ const ip=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'').split(',')[0].trim(),now=Date.now(),hits=(apiHits.get(ip)||[]).filter(t=>now-t<60000);
+ if(hits.length>=60)return apiReply(res,429,{error:'rate_limited'});hits.push(now);apiHits.set(ip,hits);if(apiHits.size>5000)apiHits.clear();
+ try{
+  const raw=await readBody(req);
+  if(pathname==='/api/vatar/webhook'){
+   if(!vatar.verifySignature(raw,req.headers['x-vatar-signature']))return apiReply(res,401,{error:'bad_signature'});
+   // Answer within Vatar's 5 s window, then re-check and deliver in the background.
+   apiReply(res,200,{ok:true});
+   vatar.webhook(raw,req.headers).catch(error=>console.warn('Webhook purchase not settled:',error.code||error.message));return;
+  }
+  let body;try{body=JSON.parse(raw.toString('utf8')||'{}')}catch{return apiReply(res,400,{error:'bad_json'})}
+  if(pathname==='/api/claim')return apiReply(res,200,await vatar.claim(body));
+  if(pathname==='/api/entitlements')return apiReply(res,200,await vatar.entitlements(body));
+  return apiReply(res,404,{error:'not_found'});
+ }catch(error){
+  const status=error.status||500;if(status>=500)console.warn('Purchase API error:',error.code||error.message);
+  if(!res.headersSent)apiReply(res,status,{error:error.code||'error'});
+ }
+}
 // Snapshots are repetitive JSON: per-message deflate cuts bandwidth roughly five-fold.
 const wss=new WebSocketServer({server,path:'/ws',maxPayload:8192,perMessageDeflate:{threshold:512,zlibDeflateOptions:{level:4,memLevel:7},concurrencyLimit:8}});
 const participants=room=>room.game.participants;

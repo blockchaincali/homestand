@@ -624,3 +624,16 @@ body:not(.in-battle) .target-alert{display:none}
  body.in-battle .toast{top:calc(var(--sat) + 150px);bottom:auto}
  #mission-progress{white-space:normal;line-height:1.2;text-align:center;max-width:42vw}
 }
+
+/* Cosmetic shop (Vatar) and the Gold Commander badge - looks only */
+.host-store{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,208,107,.45);background:linear-gradient(120deg,rgba(60,44,10,.7),rgba(10,28,35,.62));backdrop-filter:blur(8px)}
+.host-store[hidden]{display:none}
+.host-store>div{flex:1;min-width:0}
+.host-store small{font-size:10px;letter-spacing:.2em;font-weight:800;color:#ffd06b}
+.host-store b{display:block;margin:2px 0}
+.host-store p{margin:0;font-size:12px}
+.host-store .gold-mark{font-size:28px;color:#ffd06b;text-shadow:0 0 12px rgba(255,208,107,.6)}
+.host-store .owned-tag{font-size:11px;font-weight:800;letter-spacing:.14em;color:#1b1406;background:#ffd06b;border-radius:999px;padding:5px 10px}
+.gold-star{display:none;font-style:normal;color:#ffd06b;margin-left:5px}
+.gold-commander .gold-star{display:inline}
+.gold-commander #commander{border-color:#ffd06b!important;box-shadow:0 0 0 1px #ffd06b,0 0 18px rgba(255,208,107,.35);color:#ffe7a8}
