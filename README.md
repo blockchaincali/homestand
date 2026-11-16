@@ -20,3 +20,9 @@ The initial deployment includes a compressed source snapshot in `source.bundle.b
 - Automated tests, original artwork and architecture documentation
 
 Functional 2D prototype; not yet a production 3D RTS. Run one instance on Render free for testing.
+
+## Browser edition (GitHub Pages)
+
+A static, play-vs-AI edition is built by `.github/workflows/pages.yml` on every push to `main` and published to https://blockchaincali.github.io/homestand/. The engine runs in the browser through `scripts/local-server.js`; live 1v1 rooms still need the Node server (`npm start`).
+
+Build it locally with `node boot.js --extract && node scripts/build-pages.js`, then serve `dist/`.
