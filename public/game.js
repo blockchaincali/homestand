@@ -53,7 +53,7 @@ const send=payload=>{if(socket?.readyState!==WebSocket.OPEN){toast('Connecting t
 // ---------- Installable app and phone landscape play ----------
 const touchDevice=matchMedia('(pointer: coarse)').matches,standalone=matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches||navigator.standalone===true;
 let installPrompt=null;
-if(!PLATFORM?.framed&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+if(!PLATFORM?.framed&&!window.HomestandLocal&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;updateInstallButton()});
 addEventListener('appinstalled',()=>{installPrompt=null;updateInstallButton();toast('HOMESTAND installed - open it from your home screen')});
 function iosSafari(){return /iphone|ipad|ipod/i.test(navigator.userAgent)&&!standalone}
@@ -72,7 +72,9 @@ const factionName=t=>territoryMode()?(t===0?'Community Defence':'Raiders'):(t===
 const frontierPlots=()=>MAPS.layouts.frontier?.plots||[];
 function saveSession(){sessionStorage.setItem(sessionKey,JSON.stringify({code:room,id:me,team,name:localStorage.getItem('iron-frontier-name')||'Commander'}))}
 function clearSession(){sessionStorage.removeItem(sessionKey)}
-function connect(){if(socket&&socket.readyState===WebSocket.OPEN)return;const url=(location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws';socket=new WebSocket(url);
+function connect(){if(socket&&socket.readyState===WebSocket.OPEN)return;const url=(location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws';
+ // The static browser edition (GitHub Pages) runs the room server in this page instead of over the network.
+ socket=window.HomestandLocal?new window.HomestandLocal.Socket():new WebSocket(url);
  socket.onopen=()=>{connected=true;$('#network-indicator')?.replaceChildren(document.createTextNode('● CONNECTED'));document.body.classList.remove('offline');clearTimeout(reconnectTimer);const sess=JSON.parse(sessionStorage.getItem(sessionKey)||'null'),code=sess?.code||sess?.room;if(code&&sess?.id){send({type:'join',...sess,code});}};
  socket.onclose=()=>{connected=false;document.body.classList.add('offline');if($('#network-indicator'))$('#network-indicator').textContent='○ RECONNECTING';reconnectTimer=setTimeout(connect,1300)};
  socket.onerror=()=>{};
@@ -190,6 +192,8 @@ if(MAPS.edition?.()==='lagoslife'){const soft=MAPS.soften,fix=node=>{if(node.nod
  const start=()=>{document.documentElement.classList.add('edition-lagoslife');document.title=soft(document.title);fix(document.body);new MutationObserver(list=>{for(const m of list){if(m.type==='characterData')fix(m.target);else for(const n of m.addedNodes)fix(n)}}).observe(document.body,{subtree:true,childList:true,characterData:true})};
  if(document.body)start();else addEventListener('DOMContentLoaded',start)}
 if(PLATFORM?.framed)document.documentElement.classList.add('framed');
+// Browser edition (no server): online rooms are hidden; everything vs the AI still works.
+if(window.HomestandLocal)document.documentElement.classList.add('local-edition');
 PLATFORM?.on?.('identity',who=>{const input=$('#commander');if(input){input.value=who.name;input.readOnly=true;input.title='Your Lagos Life name'}localStorage.setItem('iron-frontier-name',who.name);document.documentElement.classList.add('host-'+PLATFORM.id)});
 // The host backgrounds the game (app switch, pay sheet): silence audio and pause a solo match on the server.
 PLATFORM?.on?.('pause',()=>{window.HomestandAudio?.suspend?.();if(game?.phase==='playing'&&humansInRoom()===1)send({type:'pause',paused:true})});

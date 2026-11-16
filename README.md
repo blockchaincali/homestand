@@ -2,6 +2,14 @@
 
 An original browser RTS separate from NEON HEIST. Build armies, capture relays, command units, launch orbital strikes and defeat an AI opponent or a human rival in a private 1v1 room.
 
+**Play it:** [Browser edition (GitHub Pages)](https://blockchaincali.github.io/homestand/) · [Live server with online rooms (Railway)](https://homestand.up.railway.app/)
+
+## Browser edition (GitHub Pages)
+
+A static build that needs no server: every mode against the AI (Territory War, the Defend the North campaign, Operation Safe Haven, quick battles) runs entirely in the page. The room server in `src/rooms.js` and the engine are bundled into `local.js`, and the client talks to them through an in-page socket instead of a WebSocket, so battles play exactly as they do online. Online rooms (versus, co-op) and Vatar features need the Node server.
+
+`.github/workflows/pages.yml` builds and publishes it on every push to `main`. Build it locally with `npm install && node scripts/build-pages.js`, then serve `dist/` from any path.
+
 ## Quick start
 
 ```bash

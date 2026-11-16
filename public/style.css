@@ -637,3 +637,6 @@ body:not(.in-battle) .target-alert{display:none}
 .gold-star{display:none;font-style:normal;color:#ffd06b;margin-left:5px}
 .gold-commander .gold-star{display:inline}
 .gold-commander #commander{border-color:#ffd06b!important;box-shadow:0 0 0 1px #ffd06b,0 0 18px rgba(255,208,107,.35);color:#ffe7a8}
+
+/* Static browser edition (GitHub Pages): no online rooms */
+.local-edition #tw-coop,.local-edition #tw-host,.local-edition #play-friends,.local-edition .op-card:has(#friend){display:none!important}
