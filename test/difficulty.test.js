@@ -18,3 +18,15 @@ test('Difficulty survives state snapshots and rematches',()=>{
  g.end(0,'TEST');assert.equal(g.phase,'results');assert.ok(g.start());
  assert.equal(g.snapshot().difficulty,'standard');
 });
+test('Recruit gives a newcomer force time to secure a first relay',()=>{
+ for(let attempt=0;attempt<5;attempt++){
+  const g=fresh('recruit');
+  assert.equal(g.spawn(0,'rifle').ok,true);
+  assert.equal(g.spawn(0,'tank').ok,true);
+  const ids=g.units.filter(u=>u.team===0).map(u=>u.id);
+  assert.equal(g.command(0,ids,'move',g.nodes[0].x,g.nodes[0].y).ok,true);
+  for(let i=0;i<900&&g.phase==='playing';i++)g.step(.05);
+  assert.ok(g.nodes.some(node=>node.owner===0),'player should capture a relay inside 45 seconds');
+  assert.ok(g.teams[0].credits>=g.teams[1].credits,'player economy should remain competitive');
+ }
+});

@@ -1,17 +1,30 @@
 {
-  "name": "homestand",
+  "name": "iron-frontier-rts",
   "version": "0.1.0",
   "private": true,
   "description": "Original multiplayer real-time strategy game",
   "scripts": {
-    "start": "node boot.js",
-    "test": "node boot.js --test"
+    "start": "node server.js",
+    "test": "node --test",
+    "qa:ux": "node scripts/ux-smoke.js",
+    "qa:3d": "node scripts/visual-3d-smoke.js",
+    "qa:world": "node scripts/world-3d-smoke.js",
+    "qa:final": "node scripts/final-competition-smoke.js",
+    "qa:performance": "node scripts/release-performance-profile.js",
+    "qa:safe-haven": "node scripts/safe-haven-smoke.js",
+    "qa:expansion": "node scripts/world-expansion-smoke.js",
+    "qa:mobile": "node scripts/mobile-layout-smoke.js",
+    "qa:immersive": "node scripts/immersive-capture.js",
+    "render:poster": "node scripts/render-poster.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "ws": "^8.18.3",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.56.1"
   }
 }

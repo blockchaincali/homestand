@@ -1,5 +1,7 @@
 name: Deploy browser edition to GitHub Pages
 
+# Builds the static single-player edition (scripts/build-pages.js) and publishes it to
+# https://blockchaincali.github.io/homestand/ on every push to main.
 on:
   push:
     branches: [main]
@@ -22,8 +24,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Restore bundled source
-        run: node boot.js --extract
+          cache: npm
+      - name: Install
+        run: npm ci --omit=dev
       - name: Build static single-player edition
         run: node scripts/build-pages.js
       - uses: actions/configure-pages@v5

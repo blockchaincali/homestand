@@ -1,0 +1,61 @@
+'use strict';
+const fs=require('node:fs');
+const path=require('node:path');
+const {chromium}=require('playwright-core');
+
+const origin=process.env.IRON_FRONTIER_URL||'http://127.0.0.1:3006';
+const output=path.join(__dirname,'..','artifacts','milestone-4');
+const chromePaths=process.platform==='win32'?
+ ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe','C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']:
+ ['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'];
+const executablePath=process.env.CHROME_PATH||chromePaths.find(fs.existsSync);
+if(!executablePath)throw new Error('Chrome/Chromium was not found. Set CHROME_PATH.');
+fs.mkdirSync(output,{recursive:true});
+const failures=[],evidence={capturedAt:new Date().toISOString(),origin,multiplayer:{},mobile:{},errors:failures};
+const fail=message=>{if(!failures.includes(message))failures.push(message)};
+const waitConnected=page=>page.waitForFunction(()=>document.querySelector('#network-indicator')?.textContent.includes('CONNECTED'),{timeout:10000});
+const state=page=>page.evaluate(()=>window.IronBridge.snapshot());
+const settle=(page,ms=450)=>page.waitForTimeout(ms);
+
+function monitor(page,label){
+ page.on('console',message=>{if(message.type()==='error')fail(`${label} console: ${message.text()}`)});
+ page.on('pageerror',error=>fail(`${label} page: ${error.message}`));
+ page.on('requestfailed',request=>fail(`${label} request: ${request.url()} ${request.failure()?.errorText||''}`));
+}
+
+async function prepare(page,name,map='coastal'){
+ await page.goto(origin,{waitUntil:'networkidle'});
+ await page.evaluate(({name,map})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('iron-frontier-name',name);localStorage.setItem('iron-frontier-map',map);localStorage.setItem('iron-frontier-tutorial-complete','1');localStorage.setItem('iron-frontier-view','3d')},{name,map});
+ await page.reload({waitUntil:'networkidle'});await waitConnected(page);
+}
+
+async function assertNoButtonOverlap(page,label){
+ const result=await page.evaluate(()=>{const buttons=[...document.querySelectorAll('.view-controls button')].filter(button=>button.offsetParent),rects=buttons.map(button=>{const r=button.getBoundingClientRect();return{id:button.id||button.textContent.trim(),left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}}),overlaps=[];for(let a=0;a<rects.length;a++)for(let b=a+1;b<rects.length;b++){const x=Math.min(rects[a].right,rects[b].right)-Math.max(rects[a].left,rects[b].left),y=Math.min(rects[a].bottom,rects[b].bottom)-Math.max(rects[a].top,rects[b].top);if(x>.5&&y>.5)overlaps.push([rects[a].id,rects[b].id])}return{rects,overlaps,scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth}});
+ if(result.overlaps.length)fail(`${label} camera controls overlap: ${JSON.stringify(result.overlaps)}`);
+ if(result.scrollWidth>result.viewport+1)fail(`${label} horizontal overflow: ${JSON.stringify(result)}`);
+ return result;
+}
+
+async function multiplayer(browser){
+ const hostContext=await browser.newContext({viewport:{width:1440,height:900}}),guestContext=await browser.newContext({viewport:{width:1440,height:900}}),host=await hostContext.newPage(),guest=await guestContext.newPage();monitor(host,'host');monitor(guest,'guest');
+ await prepare(host,'Host Commander','desert');await host.locator('#open-operations').click();await host.locator('#friend').click();await host.locator('#host').click();await host.locator('.roomcode').waitFor();const code=(await host.locator('.roomcode').textContent()).trim();await host.screenshot({path:path.join(output,'multiplayer-lobby-host.png')});
+ await prepare(guest,'Guest Commander','frozen');await guest.locator('#open-operations').click();await guest.locator('#friend').click();await guest.locator('#roomField').fill(code);await guest.locator('#friend-form button[type="submit"]').click();await guest.locator('.lobby').waitFor();await host.locator('#launch:not([disabled])').waitFor();
+ const lobbyMaps=await Promise.all([host,guest].map(page=>page.locator('.lobby-map strong').textContent()));if(lobbyMaps.some(value=>value!=='Desert Front'))fail(`authoritative lobby map mismatch ${JSON.stringify(lobbyMaps)}`);await host.screenshot({path:path.join(output,'multiplayer-lobby-ready.png')});
+ await host.locator('#launch').click();await Promise.all([host,guest].map(page=>page.locator('#world3d').waitFor({timeout:15000})));await settle(host,900);
+ let [hostState,guestState]=await Promise.all([state(host),state(guest)]);if(hostState.mapId!=='desert'||guestState.mapId!==hostState.mapId||guestState.terrainSeed!==hostState.terrainSeed)fail('battle map or seed desynchronized');const seed=hostState.terrainSeed,guestId=guestState.me;
+ const originalIds=hostState.units.map(unit=>unit.id);await host.locator('[data-build="rifle"]').click();await host.waitForFunction(ids=>window.IronBridge.snapshot().units.some(unit=>!ids.includes(unit.id)),originalIds);await guest.waitForFunction(ids=>window.IronBridge.snapshot().units.some(unit=>!ids.includes(unit.id)),originalIds);[hostState,guestState]=await Promise.all([state(host),state(guest)]);const hostIds=hostState.units.filter(unit=>unit.team===hostState.team).map(unit=>unit.id);if(hostState.units.length!==guestState.units.length)fail('recruited unit did not synchronize');
+ await host.locator('#select-all').click();const canvas=await host.locator('#world3d').boundingBox();if(!canvas)throw new Error('Host 3D canvas is unavailable');await host.mouse.click(canvas.x+canvas.width*.5,canvas.y+canvas.height*.52);await host.waitForFunction(ids=>window.IronBridge.snapshot().units.some(unit=>ids.includes(unit.id)&&unit.order==='move'),hostIds);await guest.waitForFunction(ids=>window.IronBridge.snapshot().units.some(unit=>ids.includes(unit.id)&&unit.order==='move'),hostIds);
+ const enemy=await host.evaluate(()=>{const bridge=window.IronBridge,rect=document.querySelector('#world3d').getBoundingClientRect();return bridge.snapshot().units.filter(unit=>unit.team!==bridge.team()).map(unit=>({id:unit.id,point:window.Iron3D.screenPoint(unit.id)})).find(value=>value.point&&value.point.x>rect.left&&value.point.x<rect.right&&value.point.y>rect.top&&value.point.y<rect.bottom)});if(!enemy)throw new Error('No enemy was available for a real focus-fire click');await host.locator('#select-all').click();await host.mouse.click(enemy.point.x,enemy.point.y);await host.waitForFunction(ids=>window.IronBridge.snapshot().units.some(unit=>ids.includes(unit.id)&&unit.order==='focus'),hostIds);await guest.waitForFunction(ids=>window.IronBridge.snapshot().units.some(unit=>ids.includes(unit.id)&&unit.order==='focus'),hostIds);await host.screenshot({path:path.join(output,'multiplayer-command-sync.png')});
+ await guest.reload({waitUntil:'networkidle'});try{await guest.locator('#world3d').waitFor({timeout:15000})}catch(error){const debug=await guest.evaluate(()=>({url:location.href,session:sessionStorage.getItem('iron-frontier-session'),indicator:document.querySelector('#network-indicator')?.textContent,body:document.body.innerText.slice(0,1200),snapshot:window.IronBridge?.snapshot?.()}));throw new Error(`Guest reconnect did not restore battle: ${JSON.stringify(debug)}`,{cause:error})}await guest.waitForFunction(id=>window.IronBridge.snapshot()?.me===id,guestId);guestState=await state(guest);if(guestState.mapId!=='desert'||guestState.terrainSeed!==seed||guestState.participants.length!==2)fail('guest reconnect lost authoritative match identity');
+ host.once('dialog',dialog=>dialog.accept());await host.locator('#menu-toggle').click();await host.locator('#surrender').click();await host.locator('#surrender-confirm').click();await Promise.all([host,guest].map(page=>page.locator('.result').waitFor({timeout:10000})));[hostState,guestState]=await Promise.all([state(host),state(guest)]);if(hostState.win?.team!==1||guestState.win?.team!==1)fail('round-one surrender result did not synchronize');await guest.screenshot({path:path.join(output,'multiplayer-victory-guest.png')});
+ await host.locator('#again').click();await Promise.all([host,guest].map(page=>page.locator('#world3d').waitFor({timeout:15000})));await Promise.all([host,guest].map(page=>page.waitForFunction(()=>window.IronBridge.snapshot()?.round===2)));[hostState,guestState]=await Promise.all([state(host),state(guest)]);if(hostState.mapId!=='desert'||guestState.terrainSeed!==seed||hostState.units.length!==10||guestState.units.length!==10)fail('rematch failed to preserve map/seed or reset forces');
+ guest.once('dialog',dialog=>dialog.accept());await guest.locator('#menu-toggle').click();await guest.locator('#surrender').click();await guest.locator('#surrender-confirm').click();await Promise.all([host,guest].map(page=>page.locator('.result').waitFor({timeout:10000})));[hostState,guestState]=await Promise.all([state(host),state(guest)]);if(hostState.win?.team!==0||guestState.win?.team!==0)fail('round-two victory result did not synchronize');await host.screenshot({path:path.join(output,'multiplayer-victory-host.png')});await host.locator('#exit').click();await host.locator('#play-now').waitFor();
+ evidence.multiplayer={code,mapId:'desert',terrainSeed:seed,reconnectedPlayer:guestId,rounds:2,recruitSynchronized:true,moveSynchronized:true,focusFireSynchronized:true,winners:[1,0],returnedHome:true};await hostContext.close();await guestContext.close();
+}
+
+async function mobile(browser){
+ const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true}),page=await context.newPage();monitor(page,'mobile-final');await prepare(page,'Mobile Commander','coastal');const hero=await page.locator('.hero-v2 img').evaluate(image=>({complete:image.complete,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,displayedWidth:image.getBoundingClientRect().width}));if(!hero.complete||hero.naturalWidth<1200||hero.naturalWidth<hero.displayedWidth*2)fail(`homepage hero is not sufficiently sharp ${JSON.stringify(hero)}`);await page.screenshot({path:path.join(output,'homepage-mobile.png'),fullPage:true});await page.locator('#open-operations').tap();await page.locator('#solo').tap();await page.locator('#world3d').waitFor({timeout:15000});await settle(page,1000);const layout=await page.evaluate(()=>{const arena=document.querySelector('.arena-frame').getBoundingClientRect();return{arenaHeight:arena.height,viewportHeight:innerHeight,ratio:arena.height/innerHeight,scrollWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth}});if(layout.ratio<.5)fail(`mobile battlefield uses too little viewport ${JSON.stringify(layout)}`);const controls=await assertNoButtonOverlap(page,'390px portrait');await page.screenshot({path:path.join(output,'battle-mobile-390.png')});evidence.mobile={hero,layout,controls};await context.close();
+ const landscapeContext=await browser.newContext({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true}),landscape=await landscapeContext.newPage();monitor(landscape,'landscape-final');await prepare(landscape,'Landscape Commander','frozen');await landscape.locator('#open-operations').tap();await landscape.locator('#solo').tap();await landscape.locator('#world3d').waitFor({timeout:15000});await settle(landscape,900);const landscapeControls=await assertNoButtonOverlap(landscape,'844x390 landscape');await landscape.screenshot({path:path.join(output,'battle-landscape-844.png')});evidence.mobile.landscapeControls=landscapeControls;await landscapeContext.close();
+}
+
+(async()=>{const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--enable-webgl','--ignore-gpu-blocklist']});try{const coverContext=await browser.newContext({viewport:{width:1440,height:900}}),cover=await coverContext.newPage();monitor(cover,'homepage');await prepare(cover,'Commander','coastal');await cover.screenshot({path:path.join(output,'homepage-desktop.png')});await coverContext.close();await multiplayer(browser);await mobile(browser)}finally{await browser.close()}fs.writeFileSync(path.join(output,'final-validation.json'),JSON.stringify(evidence,null,2));if(failures.length)throw new Error(failures.join('\n'));console.log(JSON.stringify(evidence,null,2))})().catch(error=>{console.error(error);process.exitCode=1});

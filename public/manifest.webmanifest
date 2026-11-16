@@ -1,0 +1,19 @@
+{
+  "name": "HOMESTAND — Defend What Matters",
+  "short_name": "HOMESTAND",
+  "description": "Real-time strategy in northern Nigeria: build, defend the community, rescue civilians and hold your territory.",
+  "id": "/",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0b1a20",
+  "theme_color": "#0b1a20",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
