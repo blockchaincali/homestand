@@ -9,7 +9,7 @@ const root=path.join(__dirname,'..'),pub=path.join(root,'public'),out=path.join(
 
 // ---------- 1. Bundle the CommonJS room server for the browser ----------
 // UMD files the page already loads as globals are shared, not duplicated.
-const GLOBALS={[path.join(pub,'maps.js')]:'IronMaps',[path.join(pub,'catalog.js')]:'HomestandCatalog'};
+const GLOBALS={[path.join(pub,'maps.js')]:'HomestandMaps',[path.join(pub,'catalog.js')]:'HomestandCatalog'};
 const modules=new Map();
 function resolve(from,request){
  if(!request.startsWith('.'))throw new Error(`Browser bundle cannot use "${request}" (required from ${path.relative(root,from)})`);

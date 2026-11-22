@@ -1,9 +1,9 @@
 'use strict';
 // Renders public/assets/homestand-poster.jpg from the in-engine homepage scene, so the
 // static poster shown before WebGL starts is the same original world players will see.
-// Usage: start the server, then `node scripts/render-poster.js` (IRON_FRONTIER_URL overrides).
+// Usage: start the server, then `node scripts/render-poster.js` (HOMESTAND_URL overrides).
 const fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwright-core');
-const origin=process.env.IRON_FRONTIER_URL||'http://127.0.0.1:3100';
+const origin=process.env.HOMESTAND_URL||'http://127.0.0.1:3100';
 const chromePaths=process.platform==='win32'?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']:['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'];
 const executablePath=process.env.CHROME_PATH||chromePaths.find(fs.existsSync);
 (async()=>{

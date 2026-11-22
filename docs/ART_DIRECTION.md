@@ -1,8 +1,8 @@
-# IRON FRONTIER — competition art direction
+# HOMESTAND — competition art direction
 
 ## Visual thesis
 
-IRON FRONTIER is a near-future global conflict presented as a tabletop command theatre brought to life. The world uses clean, readable silhouettes, weathered military surfaces, cyan or ember-red faction technology, and warm kinetic weapon effects. It should feel serious and energetic without becoming visually noisy or photorealistic.
+HOMESTAND is a near-future global conflict presented as a tabletop command theatre brought to life. The world uses clean, readable silhouettes, weathered military surfaces, cyan or ember-red faction technology, and warm kinetic weapon effects. It should feel serious and energetic without becoming visually noisy or photorealistic.
 
 ## Factions
 

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: iron-frontier-rts
+    name: homestand
     runtime: node
     plan: free
     region: frankfurt

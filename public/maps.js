@@ -1,7 +1,7 @@
 (function(root,factory){
  const value=factory();
  if(typeof module==='object'&&module.exports)module.exports=value;
- else root.IronMaps=value;
+ else root.HomestandMaps=value;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  const maps={

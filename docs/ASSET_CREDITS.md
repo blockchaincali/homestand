@@ -2,7 +2,7 @@
 
 ## Milestone 3.5 runtime art
 
-The four runtime images below were generated specifically for IRON FRONTIER on October 25, 2026 with OpenAI image generation, then resized/compressed locally for the stated runtime budget. They were not copied from a reference game and contain no third-party logos or characters. The repository owns the resulting project files; no external stock-asset license or attribution is required.
+The four runtime images below were generated specifically for HOMESTAND on October 25, 2026 with OpenAI image generation, then resized/compressed locally for the stated runtime budget. They were not copied from a reference game and contain no third-party logos or characters. The repository owns the resulting project files; no external stock-asset license or attribution is required.
 
 | Runtime asset | Size | Purpose |
 | --- | ---: | --- |
@@ -10,7 +10,7 @@ The four runtime images below were generated specifically for IRON FRONTIER on O
 | `public/assets/3d/azure-armor-albedo.jpg` | 1024 x 1024, 243 KB | Azure Union weathered alloy surface |
 | `public/assets/3d/crimson-armor-albedo.jpg` | 1024 x 1024, 276 KB | Crimson Legion weathered alloy surface |
 | `public/assets/3d/impact-explosion.png` | 768 x 768, 1.27 MB | Transparent impact/fire/smoke sprite |
-| `public/assets/iron-frontier-hero.webp` | 1200 x 1200, 574 KB | Original high-resolution homepage key art |
+| `public/assets/homestand-hero.webp` | 1200 x 1200, 574 KB | Original high-resolution homepage key art |
 
 Generation prompts, preserved for reproducibility:
 
@@ -24,7 +24,7 @@ The source images produced by the generator are retained in the local Codex gene
 
 ## Original renderer assets
 
-All meshes, structures, environment dressing, road markings, procedural road texture, selection indicators, badges, projectile trails, smoke, sparks, lighting, animation parameters, and camera behavior in `public/3d.js` were created specifically for IRON FRONTIER. They use reusable Three.js geometry plus the local art above. There are no network-loaded models, textures, animations, particles, sounds, or other third-party battlefield assets.
+All meshes, structures, environment dressing, road markings, procedural road texture, selection indicators, badges, projectile trails, smoke, sparks, lighting, animation parameters, and camera behavior in `public/3d.js` were created specifically for HOMESTAND. They use reusable Three.js geometry plus the local art above. There are no network-loaded models, textures, animations, particles, sounds, or other third-party battlefield assets.
 
 Milestone 3.6 adds only original code-authored environment forms: instanced desert mesas and cacti, frozen cliffs/river/ice marks, expanded coastal water and shoreline, biome vegetation, deterministic scenery placement, atmosphere palettes, and CSS-drawn map preview cards. No third-party map, texture, model, or preview asset was introduced.
 
@@ -55,4 +55,4 @@ No external models, textures, fonts, audio or libraries were added. Every new vi
 | `public/assets/homestand-poster.jpg` | Rendered from the in-engine homepage scene with `npm run render:poster` | 2400 x 1350, ~520 KB, preloaded |
 | Interface icons (inline SVG paths in `public/game.js`) and the HOMESTAND emblem | Original | Inline, no requests |
 
-The legacy `iron-frontier-hero.webp` is still served for compatibility but is no longer referenced by the interface.
+The legacy `homestand-hero.webp` is still served for compatibility but is no longer referenced by the interface.

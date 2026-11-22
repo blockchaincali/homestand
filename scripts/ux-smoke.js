@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {chromium}=require('playwright-core');
 
-const origin=process.env.IRON_FRONTIER_URL||'http://127.0.0.1:3002';
+const origin=process.env.HOMESTAND_URL||'http://127.0.0.1:3002';
 const chromePaths=process.platform==='win32'?
  ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe','C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']:
  ['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'];
@@ -25,7 +25,7 @@ async function setupPage(context,label){
  page.on('pageerror',error=>failures.push(`${label} page error: ${error.message}`));
  page.on('requestfailed',request=>failures.push(`${label} request failed: ${request.url()} ${request.failure()?.errorText||''}`));
  await page.goto(origin,{waitUntil:'networkidle'});
- await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('iron-frontier-view','2d')});
+ await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('homestand-view','2d')});
  await page.reload({waitUntil:'networkidle'});
  return page;
 }

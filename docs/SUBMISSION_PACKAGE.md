@@ -1,4 +1,4 @@
-# IRON FRONTIER competition submission package
+# HOMESTAND competition submission package
 
 ## Tagline
 
@@ -6,7 +6,7 @@ Command the frontier in a fast, cinematic 1v1 RTS built for the browser.
 
 ## Concise game description
 
-IRON FRONTIER is an original browser-based real-time strategy game where commanders recruit rifle squads, siege tanks, and rocket batteries; capture energy relays; and destroy the opposing command center across three cinematic battlegrounds. Learn through a short live tutorial, play a forgiving Recruit AI match, or challenge a friend through synchronized no-login room codes. Desktop and touch controls, adaptive 3D quality, and a complete 2D tactical fallback keep the battlefield accessible on a wide range of devices.
+HOMESTAND is an original browser-based real-time strategy game where commanders recruit rifle squads, siege tanks, and rocket batteries; capture energy relays; and destroy the opposing command center across three cinematic battlegrounds. Learn through a short live tutorial, play a forgiving Recruit AI match, or challenge a friend through synchronized no-login room codes. Desktop and touch controls, adaptive 3D quality, and a complete 2D tactical fallback keep the battlefield accessible on a wide range of devices.
 
 ## Competition highlights
 

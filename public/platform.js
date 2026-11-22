@@ -6,6 +6,9 @@
 (function(root){
  'use strict';
  if(root.HomestandPlatform)return;
+ // One-time move of settings saved under the game's old name (iron-frontier-*) so returning
+ // players keep their commander name, map, view and quality choices. Runs before game.js reads them.
+ try{for(const key of ['name','map','view','3d-quality','tutorial-complete']){const old='iron-frontier-'+key,value=localStorage.getItem(old);if(value!==null){if(localStorage.getItem('homestand-'+key)===null)localStorage.setItem('homestand-'+key,value);localStorage.removeItem(old)}}}catch{}
  const listeners=new Map();
  // The SDK is served from Lagos Life; vatarverse.com is the newer home, tried if the first fails.
  const VATAR_SDKS=['https://lagoslife.app/sdk/vatar-games-v1.js','https://vatarverse.com/sdk/vatar-games-v1.js'];
@@ -18,7 +21,7 @@
  const store=key=>{try{return localStorage.getItem(key)}catch{return null}};
  // The Lagos Life edition (fictional places, gentler wording) is on inside Vatar, or with ?edition=lagoslife to preview it.
  const edition=vatarHost||params.get('edition')==='lagoslife'?'lagoslife':'standard';
- root.IronMaps?.setEdition?.(edition);
+ root.HomestandMaps?.setEdition?.(edition);
 
  const platform={
   id:'standalone',
@@ -26,7 +29,7 @@
   edition,
   // Display identity. Standalone uses the name typed on the home screen; Vatar supplies a verified one.
   identity:null,
-  player(){return platform.identity?{...platform.identity,verified:true}:{name:store('iron-frontier-name')||'Commander',verified:false}},
+  player(){return platform.identity?{...platform.identity,verified:true}:{name:store('homestand-name')||'Commander',verified:false}},
   emit(event,detail={}){for(const fn of listeners.get(event)||[])try{fn(detail)}catch(error){console.warn('Platform listener failed',event,error)}},
   on(event,fn){if(!listeners.has(event))listeners.set(event,new Set());listeners.get(event).add(fn);return ()=>listeners.get(event)?.delete(fn)},
   // What the host allows. Framed pages get no fullscreen, popups, clipboard or install prompt.

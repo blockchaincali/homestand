@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {chromium}=require('playwright-core');
 
-const origin=process.env.IRON_FRONTIER_URL||'http://127.0.0.1:3003';
+const origin=process.env.HOMESTAND_URL||'http://127.0.0.1:3003';
 const baseline=process.argv.includes('--baseline');
 const chromePaths=process.platform==='win32'?
  ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe','C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']:
@@ -30,7 +30,7 @@ async function prepare(context,label){
  page.on('pageerror',error=>failures.push(`${label} page error: ${error.message}`));
  page.on('requestfailed',request=>failures.push(`${label} request failed: ${request.url()} ${request.failure()?.errorText||''}`));
  await page.goto(origin,{waitUntil:'networkidle'});
- await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('iron-frontier-view','3d');localStorage.setItem('iron-frontier-tutorial-complete','1');localStorage.setItem('iron-frontier-name','Visual QA');});
+ await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('homestand-view','3d');localStorage.setItem('homestand-tutorial-complete','1');localStorage.setItem('homestand-name','Visual QA');});
  await page.reload({waitUntil:'networkidle'});
  await page.locator('#open-operations').click();await page.locator('#solo').click();
  await page.locator('#world3d').waitFor({state:'visible',timeout:15000});
