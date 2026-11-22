@@ -1,5 +1,5 @@
 import * as THREE from '/vendor/three.module.js';
-import {Kit,townScenery,groundMesh,facilityMesh,structureParts,vehicleTemplate,crowd,toX,toZ,layout,disposeTree,rngFrom,C,setTheatre,welcomeSign,setLayout} from '/town.js';
+import {Kit,townScenery,groundMesh,facilityMesh,structureParts,vehicleTemplate,crowd,soldierCrowd,toX,toZ,layout,disposeTree,rngFrom,C,setTheatre,welcomeSign,setLayout} from '/town.js';
 
 // Cinematic main-menu scene: the selected campaign city at golden hour, with civilian life,
 // a distant warning in the east and a Safe Haven convoy arriving to fortify the town.
@@ -25,23 +25,31 @@ const tmp=new THREE.Object3D(),v1=new THREE.Vector3(),v2=new THREE.Vector3();
 // raider fighters and technicals push west, defenders hold the checkpoint, tracers and blasts fly.
 let skirmish=null,focus='tour',focusBlend=0;
 function buildSkirmish(quality){
- const rng=rngFrom(4242),n=quality==='high'?14:9,soldiers=crowd(n*2,9),col=new THREE.Color(),units=[];
- for(let i=0;i<n*2;i++){const raider=i>=n;soldiers.bodies.setColorAt(i,col.setHex(raider?0x8e2f24:0x2a6f93));soldiers.heads.setColorAt(i,col.setHex(raider?0x3a2a1c:0x1f3d4d));units.push({raider,x:raider?toX(2040+rng()*160):toX(1790+rng()*80),z:toZ(600+rng()*150),speed:.9+rng()*.6,phase:rng()*6,cd:rng()*1.5,home:0})}
- scene.add(soldiers.bodies,soldiers.heads);
+ const rng=rngFrom(4242),n=quality==='high'?14:9,units=[];
+ // Defenders kneel behind the checkpoint line; raiders advance on foot from the east.
+ const crews={defender:soldierCrowd(n,'defender','kneel'),raider:soldierCrowd(n,'raider','stand')};
+ for(let i=0;i<n*2;i++){const raider=i>=n;units.push({raider,slot:raider?i-n:i,x:raider?toX(2040+rng()*160):toX(1770+rng()*110),z:toZ(590+rng()*180),speed:.9+rng()*.6,phase:rng()*6,cd:rng()*1.5,home:0,flash:0})}
+ for(const c of Object.values(crews))scene.add(...c.meshes);
+ const flashes=[];for(let i=0;i<(quality==='high'?16:10);i++){const f=glowSprite('rgba(255,214,120,.98)',.7);f.visible=false;scene.add(f);flashes.push({s:f,life:0})}
+ const soldiers=crews;
  const technicals=[0,1].map(i=>{const g=vehicleTemplate('car',0x8e2f24);scene.add(g);return {g,x:toX(2150+i*90),z:toZ(650+i*55),speed:1.3+i*.3}});
- const tracerMat=new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false}),tracerGeo=new THREE.BoxGeometry(1.1,.08,.08),tracers=[];
+ const tracerMat=new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false}),tracerGeo=new THREE.BoxGeometry(.9,.035,.035),tracers=[];
  for(let i=0;i<(quality==='high'?28:16);i++){const m=new THREE.Mesh(tracerGeo,tracerMat);m.visible=false;scene.add(m);tracers.push({m,life:0,from:new THREE.Vector3(),to:new THREE.Vector3()})}
  const blasts=[],smokeTex=smokeSprite();for(let i=0;i<5;i++){const fire=glowSprite('rgba(255,170,60,.95)',1),smoke=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeTex,transparent:true,depthWrite:false,opacity:0}));fire.visible=smoke.visible=false;scene.add(fire,smoke);blasts.push({fire,smoke,life:1})}
- skirmish={soldiers,units,technicals,tracers,blasts,tracerMat,tracerGeo,clock:0,blastClock:1};
+ skirmish={soldiers,crews,units,flashes,technicals,tracers,blasts,tracerMat,tracerGeo,clock:0,blastClock:1};
 }
 function fireTracer(from,to){const free=skirmish.tracers.find(t=>t.life<=0);if(!free)return;free.from.copy(from);free.to.copy(to);free.life=1;free.m.visible=true}
+function muzzleFlash(at){const f=skirmish.flashes.find(v=>v.life<=0);if(!f)return;f.s.position.copy(at);f.s.visible=true;f.life=1}
 function blast(x,z){const b=skirmish.blasts.find(v=>v.life>=1);if(!b)return;b.life=0;b.fire.position.set(x,.8,z);b.smoke.position.set(x,1.2,z);b.fire.visible=b.smoke.visible=true}
 function stepSkirmish(dt,t){
  const k=skirmish;if(!k)return;const line=toX(1880);
  k.units.forEach((u,i)=>{if(u.raider){if(u.x>line+3.5)u.x-=u.speed*dt;if(u.home>0){u.home-=dt;if(u.home<=0){u.x=toX(2060+Math.random()*150);u.z=toZ(600+Math.random()*150)}}}
-  u.cd-=dt;if(u.cd<=0){u.cd=.5+Math.random()*1.1;const foes=k.units.filter(o=>o.raider!==u.raider),foe=foes[Math.floor(Math.random()*foes.length)];if(foe)fireTracer(v1.set(u.x,.45,u.z),v2.set(foe.x+(Math.random()-.5)*.6,.4,foe.z+(Math.random()-.5)*.6))}
-  const moving=u.raider&&u.x>line+3.5,bob=moving?Math.abs(Math.sin(t*8+u.phase))*.05:0;tmp.position.set(u.x,u.home>0?-3:bob,u.z);tmp.rotation.set(0,u.raider?-Math.PI/2:Math.PI/2,moving?0:.08);tmp.scale.setScalar(1.8);tmp.updateMatrix();k.soldiers.bodies.setMatrixAt(i,tmp.matrix);k.soldiers.heads.setMatrixAt(i,tmp.matrix)});
- k.soldiers.bodies.instanceMatrix.needsUpdate=k.soldiers.heads.instanceMatrix.needsUpdate=true;
+  const crew=u.raider?k.crews.raider:k.crews.defender,moving=u.raider&&u.x>line+3.5,bob=moving?Math.abs(Math.sin(t*8+u.phase))*.05:0;
+  tmp.position.set(u.x,u.home>0?-3:bob,u.z);tmp.rotation.set(0,u.raider?-Math.PI/2:Math.PI/2,0);if(moving)tmp.rotateX(.16);tmp.scale.setScalar(2.1);tmp.updateMatrix();
+  for(const mesh of crew.meshes)mesh.setMatrixAt(u.slot,tmp.matrix);
+  u.cd-=dt;if(u.cd<=0&&u.home<=0){u.cd=.5+Math.random()*1.1;const foes=k.units.filter(o=>o.raider!==u.raider&&o.home<=0),foe=foes[Math.floor(Math.random()*foes.length)];if(foe){const muzzle=v1.copy(crew.muzzle).applyMatrix4(tmp.matrix);muzzleFlash(muzzle);fireTracer(muzzle,v2.set(foe.x+(Math.random()-.5)*.6,.5,foe.z+(Math.random()-.5)*.6))}}});
+ for(const c of Object.values(k.crews))for(const mesh of c.meshes)mesh.instanceMatrix.needsUpdate=true;
+ for(const f of k.flashes){if(f.life<=0)continue;f.life-=dt*9;f.s.material.opacity=Math.max(0,f.life);f.s.scale.setScalar(.45+(1-f.life)*.5);if(f.life<=0)f.s.visible=false}
  for(const v of k.technicals){v.x-=v.speed*dt;if(v.x<line+5){blast(v.x,v.z);v.x=toX(2200+Math.random()*80)}placeVehicle(v.g,v1.set(v.x,0,v.z),-Math.PI/2);if(Math.random()<dt*2)fireTracer(v1.set(v.x-.6,.7,v.z),v2.set(line-1+Math.random(),.4,v.z+(Math.random()-.5)*3))}
  for(const tr of k.tracers){if(tr.life<=0)continue;tr.life-=dt*4;if(tr.life<=0){tr.m.visible=false;continue}tr.m.position.lerpVectors(tr.from,tr.to,1-tr.life);tr.m.lookAt(tr.to);tr.m.rotateY(Math.PI/2)}
  k.blastClock-=dt;if(k.blastClock<=0){k.blastClock=1.1+Math.random()*1.6;const victim=k.units.filter(u=>u.raider&&u.home<=0)[Math.floor(Math.random()*k.units.length/2)];if(victim){blast(victim.x,victim.z);victim.home=2.5}}
@@ -104,6 +112,11 @@ function update(dt){
  const dp=dust.geometry.attributes.position.array;for(let i=0;i<dp.length;i+=3){dp[i]+=dt*.35;dp[i+1]+=Math.sin(t+i)*dt*.05;if(dp[i]>45)dp[i]=-45}dust.geometry.attributes.position.needsUpdate=true;
  const sp=sparks.geometry.attributes.position.array,building=skipped||t>13;sparks.visible=building;if(building)for(let i=0;i<sp.length;i+=3){const life=(t*1.7+i*.137)%1;sp[i]=Math.sin(i*12.9)*.9+Math.sin(i)*.2*life;sp[i+1]=.9+life*.9-life*life*1.4;sp[i+2]=Math.cos(i*7.1)*.7}sparks.geometry.attributes.position.needsUpdate=true;
  if(!skipped&&t<INTRO){const u=t/INTRO;introCurve.getPoint(u,camera.position);introTargets.getPoint(u,v1)}else{const u=((t-(skipped?0:INTRO))/LOOP)%1;loopCurve.getPoint(u,camera.position);loopTargets.getPoint(u,v1)}
+ // Firefight pass: early in every loop the camera drops low beside the checkpoint so the
+ // soldiers' duel fills the frame, then lifts back to the town tour.
+ if(focus!=='battle'&&!reduced&&(skipped||t>=INTRO)){const lu=((t-(skipped?0:INTRO))/LOOP)%1,ease=(a,b,x)=>{const k=Math.min(1,Math.max(0,(x-a)/(b-a)));return k*k*(3-2*k)},w=ease(.02,.12,lu)*(1-ease(.36,.46,lu));
+  if(w>.001){const a=-.95+lu*1.1,cx=toX(1930),cz=toZ(675);v2.set(cx+Math.sin(a)*11,5.2,cz+Math.cos(a)*11);camera.position.lerp(v2,w);
+   const vw=host?.clientWidth||innerWidth,side=vw>900?-4.5:0;v2.set(cx,.8,cz);const dx=cz-camera.position.z,dz=camera.position.x-cx,len=Math.hypot(dx,dz)||1;v2.x-=dx/len*side;v2.z-=dz/len*side;v1.lerp(v2,w)}}
  focusBlend+=((focus==='battle'?1:0)-focusBlend)*Math.min(1,dt*1.6);
  if(focusBlend>.001){const a=Math.sin(t*.06)*.28,cx=toX(1960),cz=toZ(680);v2.set(cx+Math.sin(a)*19,15,cz+Math.cos(a)*19);camera.position.lerp(v2,focusBlend);
   // On wide screens the menu covers the right of the view, so aim right of the fight to keep it in the open left side.
@@ -128,10 +141,25 @@ export function mount(target,opts={}){
  resizeHandler=()=>resize();addEventListener('resize',resizeHandler);visibleHandler=()=>document.hidden?pause():play();document.addEventListener('visibilitychange',visibleHandler);
  if(!opts.poster)play();
 }
+// Faction card art: each side's squad and vehicle rendered once from the game's own models
+// on a transparent background, cached as an image. Defenders face right, raiders face left.
+const factionArtCache={};
+export function factionArt(side){
+ if(factionArtCache[side])return factionArtCache[side];
+ const def=side==='defender',dir=def?1:-1,W=560,H=300;let r;
+ try{r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true})}catch{return null}
+ r.setSize(W,H,false);r.setClearColor(0x000000,0);r.outputColorSpace=THREE.SRGBColorSpace;
+ const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xfff3dd,0x3a3f36,2.3));const sun=new THREE.DirectionalLight(def?0xcfe8ff:0xffc79a,2.6);sun.position.set(def?-3:3,6,5);sc.add(sun);const rim=new THREE.DirectionalLight(def?0x5ab8ff:0xff6a3a,2.2);rim.position.set(def?4:-4,3,-4);sc.add(rim);
+ const cam=new THREE.PerspectiveCamera(24,W/H,.1,100);cam.position.set(-1.05*dir,1.75,5.9);cam.lookAt(-1.05*dir,.72,0);
+ const face=def?Math.PI/2-.45:-Math.PI/2+.45,t=new THREE.Object3D();
+ const squad=def?[['kneel',.55,.6],['stand',-.25,-.15],['stand',-.95,.45],['kneel',-1.7,-.3]]:[['stand',.55,.55],['stand',-.2,-.2],['stand',-.95,.5],['stand',-1.65,-.35]];
+ for(const [stance,x,z] of squad){const c=soldierCrowd(1,side,stance);t.position.set(x*dir,0,z);t.rotation.set(0,face,0);if(!def&&stance==='stand')t.rotateX(.08);t.scale.setScalar(1.7);t.updateMatrix();for(const m of c.meshes){m.setMatrixAt(0,t.matrix);sc.add(m)}}
+ const v=vehicleTemplate(def?'patrol':'car',def?undefined:0x8e2f24);v.scale.setScalar(1.25);v.position.set(-2.6*dir,0,-1.6);v.rotation.y=def?-.35:Math.PI+.35;sc.add(v);
+ r.render(sc,cam);const url=r.domElement.toDataURL('image/png');disposeTree(sc);r.dispose();factionArtCache[side]=url;return url}
 export function skip(){if(skipped)return;skipped=true;elapsed=0;options.onBeat?.(null,99)}
 export function unmount(){pause();removeEventListener('resize',resizeHandler);document.removeEventListener('visibilitychange',visibleHandler);if(scene){disposeTree(scene);scene.background?.dispose();plume.texture?.dispose();for(const b of beacons)b.material.map?.dispose()}renderer?.dispose();renderer?.domElement.remove();renderer=scene=camera=null;skirmish=null;traffic=[];convoy=[];people=null;dust=null;beacons=[];plume=[];sparks=null}
 export const active=()=>Boolean(renderer);
 // Re-dress the background for the city picked on the campaign map.
 function changeTheatre(id){if(!renderer||!host)return;const target=host,opts={...options,skipIntro:true,theatreId:id};unmount();mount(target,opts)}
-window.HomestandHome={mount,unmount,skip,active,pause,play,setTheatre:changeTheatre,beats:()=>BEATS,focus:(mode,instant)=>{focus=mode==='battle'?'battle':'tour';if(instant)focusBlend=focus==='battle'?1:0},debug:()=>({focus,focusBlend,running})};
+window.HomestandHome={mount,unmount,skip,factionArt,active,pause,play,setTheatre:changeTheatre,beats:()=>BEATS,focus:(mode,instant)=>{focus=mode==='battle'?'battle':'tour';if(instant)focusBlend=focus==='battle'?1:0},debug:()=>({focus,focusBlend,running,elapsed,skipped})};
 window.dispatchEvent(new Event('homestand-home-ready'));

@@ -640,3 +640,41 @@ body:not(.in-battle) .target-alert{display:none}
 
 /* Static browser edition (GitHub Pages): no online rooms */
 .local-edition #tw-coop,.local-edition #tw-host,.local-edition #play-friends,.local-edition .op-card:has(#friend){display:none!important}
+/* Faction squads rendered from the game's own models, squaring off across the VS. */
+.faction-banner{min-height:170px}
+.faction-banner .faction-art{position:absolute;bottom:-2px;width:min(64%,360px);height:auto;z-index:0;pointer-events:none;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55));animation:squad-in .7s cubic-bezier(.2,.8,.2,1) both}
+.faction-banner.defence .faction-art{right:-6px}
+.faction-banner.raiders .faction-art{left:-6px}
+.faction-banner.defence>small,.faction-banner.defence>b,.faction-banner.defence>span:not(.ember){max-width:52%}
+.faction-banner.raiders>small,.faction-banner.raiders>b,.faction-banner.raiders>span:not(.ember){max-width:52%}
+@keyframes squad-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (max-width:640px){.faction-banner{min-height:150px}.faction-banner .faction-art{width:58%}}
+@media (prefers-reduced-motion:reduce){.faction-banner .faction-art{animation:none}}
+.faction-banner>small,.faction-banner>b,.faction-banner>span:not(.ember){position:relative;z-index:1;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+.faction-banner>i{z-index:1}
+@media (max-width:640px){.faction-banner>small,.faction-banner>b,.faction-banner>span:not(.ember){max-width:none}.faction-banner .faction-art{width:86%;opacity:.55}.faction-banner.defence .faction-art{right:-10%}.faction-banner.raiders .faction-art{left:-10%}}
+/* Global frontlines: world theatre map on the operations sheet. */
+.world-card{grid-column:1/-1;padding:16px 18px;margin-bottom:14px;background:linear-gradient(160deg,rgba(14,38,48,.92),rgba(8,20,27,.94));border:1px solid rgba(97,239,255,.16);border-radius:18px}
+.world-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.world-head small{font-size:11px;letter-spacing:.14em;font-weight:800;color:#8fd0f4;text-transform:uppercase}
+.world-card h3{margin:10px 0 4px;font:900 clamp(18px,2vw,24px) var(--display);text-transform:uppercase;letter-spacing:.02em}
+.world-lead{margin:0 0 10px;font-size:13px;opacity:.8;max-width:70ch}
+.world-map{position:relative;aspect-ratio:1000/395;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 60%,rgba(47,134,180,.18),transparent 70%),#0a1a21}
+.world-map img{position:absolute;inset:0;width:100%;height:100%;opacity:.95}
+.world-pin{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:inherit;font:inherit;z-index:1}
+.world-pin i{flex:none;width:12px;height:12px;border-radius:50%;background:#6f8f99;box-shadow:0 0 0 3px rgba(111,143,153,.25)}
+.world-pin span{font-size:10px;line-height:1.2;white-space:nowrap;padding:3px 7px;border-radius:8px;background:rgba(4,12,16,.78);color:#b9cdd3;opacity:.92}
+.world-pin span b{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#e6f1f4}
+.world-pin.live{cursor:pointer;z-index:2}
+.world-pin.live i{width:16px;height:16px;background:#f2c230;box-shadow:0 0 0 4px rgba(242,194,48,.3),0 0 18px rgba(242,194,48,.8);animation:pin-pulse 1.8s ease-out infinite}
+.world-pin.live span{background:rgba(242,194,48,.95);color:#1b1305;font-weight:800}
+.world-pin.live span b{color:#1b1305}
+.world-pin.live:focus-visible{outline:2px solid #f2c230;outline-offset:4px;border-radius:10px}
+@keyframes pin-pulse{0%{box-shadow:0 0 0 0 rgba(242,194,48,.65),0 0 18px rgba(242,194,48,.8)}100%{box-shadow:0 0 0 14px rgba(242,194,48,0),0 0 18px rgba(242,194,48,.8)}}
+@media (max-width:640px){.world-pin.soon span{display:none}.world-pin span{font-size:9px}}
+@media (prefers-reduced-motion:reduce){.world-pin.live i{animation:none}}
+.world-head .op-badge{position:static}
+/* Each pin's dot sits exactly on its place; the label hangs to one side of it. */
+.world-pin{transform:translate(-6px,-50%)}.world-pin.live{transform:translate(-8px,-50%)}
+.world-pin.left{flex-direction:row-reverse;transform:translate(calc(-100% + 6px),-50%)}.world-pin.live.left{transform:translate(calc(-100% + 8px),-50%)}
+.world-pin.left span{text-align:right}

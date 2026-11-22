@@ -243,6 +243,32 @@ export function crowd(count,seed=3){
  const rng=rngFrom(seed),bodies=new THREE.InstancedMesh(new THREE.CapsuleGeometry(.11,.3,3,6).translate(0,.27,0),new THREE.MeshStandardMaterial({roughness:.8}),count),heads=new THREE.InstancedMesh(new THREE.SphereGeometry(.09,8,6).translate(0,.6,0),new THREE.MeshStandardMaterial({roughness:.7}),count),col=new THREE.Color();
  for(let i=0;i<count;i++){bodies.setColorAt(i,col.setHex(CLOTH[Math.floor(rng()*CLOTH.length)]));heads.setColorAt(i,col.setHex([0x4a2c1d,0x5c3824,0x3b2418,0x6b4129][i%4]))}
  bodies.castShadow=false;return {bodies,heads,count,rng}}
+// Armed soldiers for the homepage firefight: instanced, three draw calls per side.
+// Uniform, gear and skin are separate meshes so each side reads at a glance:
+// defenders wear helmets, plate vests and packs; raiders wear headwraps and bandoliers.
+// The model faces +z with the rifle raised to the shoulder; `stance` 'kneel' lowers it behind cover.
+export function soldierCrowd(count,side='defender',stance='stand'){
+ const def=side==='defender',kneel=stance==='kneel',drop=kneel?.12:0;
+ const B=(w,h,d,x,y,z,rx=0,ry=0,rz=0)=>{const g=new THREE.BoxGeometry(w,h,d);if(rx||ry||rz)g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx,ry,rz)));return g.translate(x,y,z)};
+ const S=(r,x,y,z,sy=1)=>new THREE.SphereGeometry(r,10,8).scale(1,sy,1).translate(x,y,z);
+ const flat=g=>{const n=g.index?g.toNonIndexed():g;for(const k of Object.keys(n.attributes))if(!['position','normal'].includes(k))n.deleteAttribute(k);return n};
+ const merge=list=>mergeGeometries(list.map(flat),false);
+ // Legs: standing, or one knee down when kneeling behind cover.
+ const legs=kneel?[B(.07,.16,.08,-.055,.09,.03),B(.07,.07,.2,-.055,.03,-.06),B(.07,.18,.08,.055,.1,.1),B(.07,.07,.16,.055,.2,.03)]
+  :[B(.07,.27,.08,-.055,.17,0),B(.07,.27,.08,.055,.17,.02,-.12)];
+ const y=v=>v-drop;
+ const uniform=merge([...legs,B(.2,.23,.12,0,y(.43),0),B(.06,.06,.2,-.085,y(.47),.1,-.15,.15),B(.06,.06,.17,.09,y(.45),.06,0,-.25),...(def?[]:[B(.21,.05,.13,0,y(.33),0)])]);
+ const gearParts=[B(.06,.05,.11,-.055,kneel?.02:.025,.02),B(.06,.05,.11,.055,kneel?.02:.025,.04),
+  B(.04,.055,.3,.03,y(.49),.17),B(.022,.022,.16,.03,y(.505),.38),B(.03,.08,.04,.03,y(.43),.2),B(.035,.05,.09,.03,y(.47),.0)];
+ if(def)gearParts.push(B(.225,.19,.14,0,y(.44),0),B(.17,.2,.08,0,y(.46),-.1),S(.082,0,y(.64),0,.72),B(.19,.012,.19,0,y(.615),0),B(.05,.05,.03,-.06,y(.4),.075),B(.05,.05,.03,.06,y(.4),.075));
+ else gearParts.push(S(.078,0,y(.635),-.005,.85),B(.05,.05,.25,0,y(.44),.065,0,0,.75),B(.05,.05,.25,0,y(.44),-.065,0,0,-.75),B(.11,.045,.02,0,y(.575),.062));
+ const gear=merge(gearParts),skin=merge([S(.066,0,y(.6),0),S(.028,-.1,y(.47),.21),S(.028,.08,y(.45),.14)]);
+ const mk=(g,color,rough)=>{const m=new THREE.InstancedMesh(g,new THREE.MeshStandardMaterial({color,roughness:rough,flatShading:true}),count);m.castShadow=false;return m};
+ const bodies=mk(uniform,0xffffff,.85),kit=mk(gear,def?0x2b3328:0x241d19,.7),heads=mk(skin,0xffffff,.75),col=new THREE.Color(),rng=rngFrom(def?17:29);
+ const cloth=def?[0x3e6378,0x456d82,0x38596b]:[0x7c3a27,0x6b4a2c,0x5a3326,0x7a5a36];
+ for(let i=0;i<count;i++){bodies.setColorAt(i,col.setHex(cloth[Math.floor(rng()*cloth.length)]));heads.setColorAt(i,col.setHex([0x4a2c1d,0x5c3824,0x3b2418,0x6b4129,0x8d5a3b,0xc08a64][Math.floor(rng()*6)]))}
+ // Muzzle sits at the rifle tip in model space.
+ return {bodies,kit,heads,count,meshes:[bodies,kit,heads],muzzle:new THREE.Vector3(.03,y(.505),.47)}}
 export function vehicleTemplate(kind,color){const k=new Kit(kind.length+(color||0));const build=()=>k.build({shadows:false,shared:true});if(kind==='danfo')danfo(k,0,0);else if(kind==='keke')keke(k,0,0);else if(kind==='patrol')patrolTruck(k);else if(kind==='engineer')engineerRig(k);else if(kind==='truck')supplyTruck(k);else car(k,0,0,color||C.white);return build()}
 export function patrolTruck(k){k.box('paint',C.azure,0,.25,0,1.6,.55,.82,0,.25);k.box('paint',C.azureDark,-.5,.8,0,.55,.4,.78,0,.15);k.box('glass',0x2c3c46,-.2,.86,0,.04,.24,.66,0,0);k.box('paint',C.azure,.35,.8,0,.75,.32,.8,0,.2);k.cyl('metal',C.steel,.35,1.12,0,.22,.16,10);k.cyl('metal',C.steel,.62,1.2,0,.04,.55,6,0,0,Math.PI/2);for(const [a,b] of [[-.52,-.42],[.52,-.42],[-.52,.42],[.52,.42]])k.cyl('matte',C.black,a,.22,b,.22,.16,12,0,Math.PI/2,0);k.box('glow',0xbfeaff,-.82,.42,.28,.03,.08,.12);k.box('glow',0xbfeaff,-.82,.42,-.28,.03,.08,.12)}
 export function engineerRig(k){k.box('paint',C.hazard,0,.2,0,1.4,.45,.8,0,.25);k.box('paint',0x3a3a34,-.15,.65,0,.6,.45,.62,0,.15);k.box('glass',0x2c3c46,-.15,.8,0,.62,.2,.5,0,0);k.box('metal',C.steel,-.95,.08,0,.16,.42,1.0,0,.2);k.add('paint',G.box(),C.hazard,.3,.95,0,1.2,.12,.12,0,0,0,.45,.05);for(const z of [-.4,.4])k.box('matte',C.black,0,.04,z,1.25,.32,.2,0,.2)}

@@ -5,10 +5,10 @@ const {createHub}=require('./src/rooms');
 const {createVatar}=require('./src/vatar');
 const vatar=createVatar();
 const PORT=Number(process.env.PORT||3000);
-const staticFiles={'/manifest.webmanifest':'manifest.webmanifest','/sw.js':'sw.js','/icons/icon-192.png':'icons/icon-192.png','/icons/icon-512.png':'icons/icon-512.png','/icons/maskable-512.png':'icons/maskable-512.png','/icons/apple-touch-icon.png':'icons/apple-touch-icon.png','/maps.js':'maps.js','/3d.js':'3d.js','/3d.css':'3d.css','/home.js':'home.js','/town.js':'town.js','/platform.js':'platform.js','/audio.js':'audio.js','/catalog.js':'catalog.js','/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/assets/homestand-hero.webp':'assets/homestand-hero.webp','/assets/homestand-poster.jpg':'assets/homestand-poster.jpg','/assets/3d/coastal-ground-albedo.jpg':'assets/3d/coastal-ground-albedo.jpg','/assets/3d/azure-armor-albedo.jpg':'assets/3d/azure-armor-albedo.jpg','/assets/3d/crimson-armor-albedo.jpg':'assets/3d/crimson-armor-albedo.jpg','/assets/3d/impact-explosion.png':'assets/3d/impact-explosion.png'};
+const staticFiles={'/manifest.webmanifest':'manifest.webmanifest','/sw.js':'sw.js','/icons/icon-192.png':'icons/icon-192.png','/icons/icon-512.png':'icons/icon-512.png','/icons/maskable-512.png':'icons/maskable-512.png','/icons/apple-touch-icon.png':'icons/apple-touch-icon.png','/maps.js':'maps.js','/3d.js':'3d.js','/3d.css':'3d.css','/home.js':'home.js','/town.js':'town.js','/platform.js':'platform.js','/audio.js':'audio.js','/catalog.js':'catalog.js','/':'index.html','/index.html':'index.html','/style.css':'style.css','/game.js':'game.js','/assets/homestand-hero.webp':'assets/homestand-hero.webp','/assets/homestand-poster.jpg':'assets/homestand-poster.jpg','/assets/world-map.svg':'assets/world-map.svg','/assets/3d/coastal-ground-albedo.jpg':'assets/3d/coastal-ground-albedo.jpg','/assets/3d/azure-armor-albedo.jpg':'assets/3d/azure-armor-albedo.jpg','/assets/3d/crimson-armor-albedo.jpg':'assets/3d/crimson-armor-albedo.jpg','/assets/3d/impact-explosion.png':'assets/3d/impact-explosion.png'};
 // Browsers receive the minified Three.js build; the stable /vendor/three.module.js URL keeps the import map unchanged.
 const vendorFiles={'/vendor/three.module.js':['three','build','three.module.min.js'],'/vendor/three.core.min.js':['three','build','three.core.min.js'],'/vendor/three.core.js':['three','build','three.core.min.js'],'/vendor/BufferGeometryUtils.js':['three','examples','jsm','utils','BufferGeometryUtils.js']};
-const compressible=/\.(html|css|js)$/,responseCache=new Map();
+const compressible=/\.(html|css|js|svg)$/,responseCache=new Map();
 function serveFile(req,res,filePath,cacheControl){
  fs.stat(filePath,(statError,stat)=>{if(statError){res.writeHead(404);return res.end('Not found')}
   const type=contentType[path.extname(filePath)]||'application/octet-stream',etag='"'+stat.size.toString(36)+'-'+Math.floor(stat.mtimeMs).toString(36)+'"',gzip=compressible.test(filePath)&&/\bgzip\b/.test(req.headers['accept-encoding']||'');
@@ -23,7 +23,7 @@ function serveFile(req,res,filePath,cacheControl){
 }
 // FRAME_ANCESTORS_EXTRA (space-separated origins) lets a local test harness frame the game; unset in production.
 const FRAME_POLICY="frame-ancestors 'self' https://lagoslife.app https://www.lagoslife.app https://naijalife.app https://www.naijalife.app https://lagoslife.eliysites.com https://vatarverse.com https://www.vatarverse.com"+(process.env.FRAME_ANCESTORS_EXTRA?' '+process.env.FRAME_ANCESTORS_EXTRA.split(/\s+/).filter(o=>/^https?:\/\/[a-z0-9.:-]+$/i.test(o)).join(' '):'');
-const contentType={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.webmanifest':'application/manifest+json'};
+const contentType={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'};
 const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://localhost').pathname;
  if(vendorFiles[pathname])return serveFile(req,res,path.join(__dirname,'node_modules',...vendorFiles[pathname]),'public, max-age=604800');
