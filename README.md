@@ -2,7 +2,7 @@
 
 An original browser RTS separate from NEON HEIST. Build armies, capture relays, command units, launch orbital strikes and defeat an AI opponent or a human rival in a private 1v1 room.
 
-**Play it:** [Browser edition (GitHub Pages)](https://blockchaincali.github.io/homestand/) · [Live server with online rooms (Railway)](https://homestand.up.railway.app/)
+**Play it:** [Browser edition (GitHub Pages)](https://blockchaincali.github.io/homestand/) · [Live server with online rooms (Railway)](https://playhomestand.up.railway.app/)
 
 ## Browser edition (GitHub Pages)
 
