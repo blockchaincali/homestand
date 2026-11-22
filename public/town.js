@@ -7,7 +7,7 @@ import {mergeGeometries} from '/vendor/BufferGeometryUtils.js';
 // shared by the battle renderer and the cinematic homepage.
 const W=2400,H=1350,S=30,TAU=Math.PI*2;
 export const toX=x=>(x-W/2)/S,toZ=y=>(y-H/2)/S;
-const MAPS=globalThis.IronMaps;
+const MAPS=globalThis.HomestandMaps;
 // The authored layout in use: Safe Haven's town or the Territory War frontier.
 let layoutId='safe-haven';
 export function setLayout(id){layoutId=MAPS.layouts[id]?id:'safe-haven';return layoutId}

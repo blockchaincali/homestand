@@ -56,11 +56,11 @@ Run its browser interaction and performance check with `npm run qa:safe-haven` w
 
 The current build includes a Three.js battlefield and a fully playable 2D tactical fallback. Run one instance on Render because active room state is held in memory.
 
-Additional browser validation commands are `npm run qa:ux`, `npm run qa:3d`, `npm run qa:world`, and `npm run qa:final`. Start the local server first and set `IRON_FRONTIER_URL` when it is not running at the script default.
+Additional browser validation commands are `npm run qa:ux`, `npm run qa:3d`, `npm run qa:world`, and `npm run qa:final`. Start the local server first and set `HOMESTAND_URL` when it is not running at the script default.
 
 ## HOMESTAND release notes
 
-HOMESTAND is the public game brand. The repository and localStorage keys retain the original `iron-frontier` identifiers for compatibility with existing installs and player preferences. The `/assets/iron-frontier-hero.webp` filename is retained as an internal asset path. Operation Safe Haven is the civilian-protection mission; the original battlegrounds and private multiplayer remain available.
+HOMESTAND is the game's name everywhere: the package, storage keys, scripts and assets all use `homestand`. The game was first built as Iron Frontier; settings saved under the old `iron-frontier-*` browser keys are moved to the new keys automatically the first time a returning player opens the game. Operation Safe Haven is the civilian-protection mission; the original battlegrounds and private multiplayer remain available.
 
 
 ## Install as an app

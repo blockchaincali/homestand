@@ -45,7 +45,7 @@ test('3D art uses local original assets and reusable geometry without remote req
 });
 
 test('2D fallback and contextual input bridge remain wired',()=>{
- assert.match(gameUi,/iron-frontier-view/);
+ assert.match(gameUi,/homestand-view/);
  assert.match(gameUi,/window\.IronBridge=/);
  assert.match(gameUi,/applyViewMode\(\)/);
  assert.match(gameUi,/handleWorldTap/);

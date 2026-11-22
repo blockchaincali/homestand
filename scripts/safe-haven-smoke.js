@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {chromium}=require('playwright-core');
 
-const origin=process.env.IRON_FRONTIER_URL||'http://127.0.0.1:3008';
+const origin=process.env.HOMESTAND_URL||'http://127.0.0.1:3008';
 const chromePaths=process.platform==='win32'?['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe','C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']:['/usr/bin/google-chrome','/usr/bin/chromium'];
 const executablePath=process.env.CHROME_PATH||chromePaths.find(fs.existsSync);
 if(!executablePath)throw new Error('Chrome/Chromium was not found. Set CHROME_PATH.');
@@ -13,7 +13,7 @@ const fail=message=>failures.push(message);
 
 async function prepare(page,label){
  page.on('console',message=>{if(message.type()==='error')fail(`${label} console: ${message.text()}`)});page.on('pageerror',error=>fail(`${label} page: ${error.message}`));page.on('requestfailed',request=>fail(`${label} request: ${request.url()} ${request.failure()?.errorText||''}`));
- await page.goto(origin,{waitUntil:'networkidle'});await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('iron-frontier-tutorial-complete','1');localStorage.setItem('iron-frontier-3d-quality','balanced')});await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#network-indicator')?.textContent.includes('CONNECTED'),null,{timeout:10000});
+ await page.goto(origin,{waitUntil:'networkidle'});await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('homestand-tutorial-complete','1');localStorage.setItem('homestand-3d-quality','balanced')});await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#network-indicator')?.textContent.includes('CONNECTED'),null,{timeout:10000});
 }
 async function startMission(page){await page.locator('#open-operations').click();await page.locator('#safe-haven').click();await page.locator('#world3d').waitFor({timeout:15000});await page.waitForFunction(()=>window.IronBridge.snapshot()?.missionId==='safe-haven'&&window.IronBridge.snapshot()?.mission?.stage==='tutorial');await page.locator('#tutorial-card').waitFor();if(await page.evaluate(()=>innerWidth>1000))await page.screenshot({path:path.join(output,'desktop-tutorial.png'),fullPage:true});await page.locator('#tutorial-skip').click();await page.waitForFunction(()=>window.IronBridge.snapshot()?.mission?.stage==='prepare');}
 async function selectEngineer(page,touch=false){const point=await page.evaluate(()=>{const unit=window.IronBridge.snapshot().units.find(value=>value.type==='engineer');return unit&&window.Iron3D.screenPoint(unit.id)});if(!point)throw new Error('Engineer was not visible');if(touch)await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);await page.waitForFunction(()=>[...window.IronBridge.selected()].some(id=>window.IronBridge.snapshot().units.find(unit=>unit.id===id)?.type==='engineer'));}

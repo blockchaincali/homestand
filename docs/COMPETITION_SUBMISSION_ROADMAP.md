@@ -1,4 +1,4 @@
-# IRON FRONTIER v1 — 2026 Competition Roadmap
+# HOMESTAND v1 — 2026 Competition Roadmap
 
 **Prepared October 24, 2026.** Official mission promotional copy lists October 31; verify official contest rules/entrant eligibility and exact cutoff. **Internal target: submission-ready October 29**, preserving October 30 as buffer, not as extra feature day.
 
@@ -71,8 +71,8 @@ A beginner can join/play in two clicks, grasp the objective within 30 seconds, a
 **75–90s:** show invite-by-code in second device and synced multiplayer HUD; end or replay affordance.
 
 ## Judge-facing checklist
-- Working public URL: https://iron-frontier-rts.onrender.com
-- GitHub code: https://github.com/blockchaincali/iron-frontier-rts
+- Working public URL: https://homestand.onrender.com
+- GitHub code: https://github.com/blockchaincali/homestand
 - Room codes, no login, actual synchronized two-player gameplay
 - Three genuine current-build screenshots (start, 3D battle, multiplayer)
 - Distinctive cover art, project title and concise description

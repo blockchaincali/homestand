@@ -120,7 +120,7 @@ export function mount(target,opts={}){
  const small=matchMedia('(max-width: 900px), (max-height: 520px)').matches,quality=opts.quality||(small||(navigator.hardwareConcurrency||8)<=4?'balanced':'high');
  try{renderer=new THREE.WebGLRenderer({antialias:!small,powerPreference:'high-performance',preserveDrawingBuffer:Boolean(opts.poster)})}catch(error){console.warn('Homepage scene unavailable',error);opts.onFail?.();return}
  renderer.debug.checkShaderErrors=false;renderer.setPixelRatio(Math.min(devicePixelRatio||1,opts.poster?2:small?1.25:1.5));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.shadowMap.enabled=quality==='high';renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
- setLayout('safe-haven');const M=globalThis.IronMaps;theatreLook=M?.theatre?setTheatre(M.theatre(opts.theatreId||localStorage.getItem('homestand-theatre')).id):null;BEATS=beatsFor(theatreLook)||BEATS;
+ setLayout('safe-haven');const M=globalThis.HomestandMaps;theatreLook=M?.theatre?setTheatre(M.theatre(opts.theatreId||localStorage.getItem('homestand-theatre')).id):null;BEATS=beatsFor(theatreLook)||BEATS;
  camera=new THREE.PerspectiveCamera(40,1,.3,320);buildScene(quality);
  const canvas=renderer.domElement;canvas.className='home-canvas';canvas.setAttribute('aria-hidden','true');host.appendChild(canvas);resize();
  if(opts.poster){skipped=true;update(0);camera.position.set(-30,12.5,21);camera.lookAt(-10,0,1)}else update(0);

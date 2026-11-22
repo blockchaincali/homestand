@@ -4,7 +4,7 @@
 // guided training, construction, production, civilian-defense combat and results,
 // at desktop, laptop, two landscape phones and the portrait fallback.
 const fs=require('node:fs'),path=require('node:path'),{chromium}=require('playwright-core');
-const origin=process.env.IRON_FRONTIER_URL||'http://127.0.0.1:3100',out=path.join(__dirname,'..','artifacts','immersive-v2','after');
+const origin=process.env.HOMESTAND_URL||'http://127.0.0.1:3100',out=path.join(__dirname,'..','artifacts','immersive-v2','after');
 const chromePaths=process.platform==='win32'?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']:['/usr/bin/google-chrome','/usr/bin/chromium'];
 const executablePath=process.env.CHROME_PATH||chromePaths.find(fs.existsSync);fs.mkdirSync(out,{recursive:true});
 const views=[['desktop-1440',{width:1440,height:900},false],['desktop-1365',{width:1365,height:768},false],['mobile-844',{width:844,height:390},true],['mobile-932',{width:932,height:430},true],['portrait-390',{width:390,height:844},true]];

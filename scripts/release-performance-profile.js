@@ -4,7 +4,7 @@ const path=require('node:path');
 const zlib=require('node:zlib');
 const {chromium}=require('playwright-core');
 
-const origin=process.env.IRON_FRONTIER_URL||'http://127.0.0.1:3007';
+const origin=process.env.HOMESTAND_URL||'http://127.0.0.1:3007';
 const durationSeconds=Number(process.env.IRON_PROFILE_SECONDS||120);
 const label=(process.argv.find(value=>value.startsWith('--label='))||'--label=profile').slice(8);
 const chromePaths=process.platform==='win32'?
@@ -39,7 +39,7 @@ async function run(){
  await cdp.send('Tracing.start',{categories:'devtools.timeline,v8.execute,blink.user_timing,gpu,disabled-by-default-devtools.timeline.frame,disabled-by-default-v8.gc',transferMode:'ReturnAsStream'});
  try{
   await page.goto(origin,{waitUntil:'networkidle'});
-  await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('iron-frontier-view','3d');localStorage.setItem('iron-frontier-tutorial-complete','1');localStorage.setItem('iron-frontier-name','Performance QA')});
+  await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('homestand-view','3d');localStorage.setItem('homestand-tutorial-complete','1');localStorage.setItem('homestand-name','Performance QA')});
   await page.reload({waitUntil:'networkidle'});await page.locator('#open-operations').click();await page.locator('#solo').click();await page.locator('#world3d').waitFor({state:'visible',timeout:15000});await page.waitForTimeout(2500);
   await page.locator('#select-all').click();
   const started=Date.now(),finish=started+durationSeconds*1000;let nextRecruit=0,nextCommand=0,nextOrbital=45;

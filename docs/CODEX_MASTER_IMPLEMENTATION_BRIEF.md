@@ -1,13 +1,13 @@
-# CODEX MASTER IMPLEMENTATION BRIEF — IRON FRONTIER v1: Competition Edition
+# CODEX MASTER IMPLEMENTATION BRIEF — HOMESTAND v1: Competition Edition
 
 ## Mission
-You are the lead implementation engineer and game UX specialist for **IRON FRONTIER**, an original, browser-based, real-time strategy (RTS) game competing in Handshake × OpenAI's **Create a Multiplayer Game** mission.
+You are the lead implementation engineer and game UX specialist for **HOMESTAND**, an original, browser-based, real-time strategy (RTS) game competing in Handshake × OpenAI's **Create a Multiplayer Game** mission.
 
-**Repository:** https://github.com/blockchaincali/iron-frontier-rts  
-**Current deployment:** https://iron-frontier-rts.onrender.com  
+**Repository:** https://github.com/blockchaincali/homestand  
+**Current deployment:** https://homestand.onrender.com  
 **Separate unrelated project:** NEON HEIST, hosted from `blockchaincali/blindspot-multiplayer`. **Never modify NEON HEIST.**
 
-**Your job is to IMPLEMENT, test, document, and prepare IRON FRONTIER v1 for deployment—not merely suggest a plan.** Begin by inspecting the actual repository and reproducing the current game. Work incrementally and preserve a working deployment. If you lack deployment credentials, finish changes in a testable branch/PR and explain the exact deployment action needed. Do not falsely report deployment or browser testing.
+**Your job is to IMPLEMENT, test, document, and prepare HOMESTAND v1 for deployment—not merely suggest a plan.** Begin by inspecting the actual repository and reproducing the current game. Work incrementally and preserve a working deployment. If you lack deployment credentials, finish changes in a testable branch/PR and explain the exact deployment action needed. Do not falsely report deployment or browser testing.
 
 **Creative direction:** An original, stylish near-future strategy game with the excitement and visual legibility of polished mobile RTS titles. Reference screenshots from Art of War establish an *ambition for visual fidelity and cinematic combat*, not permission to reproduce any copyrighted art, characters, factions, iconography, UI layouts, sounds, or branding. Create a distinct visual identity, environments, faction silhouettes, and UI.
 
@@ -25,7 +25,7 @@ Known pieces at time of brief:
 - Current browser client `public/game.js` with dense DOM/HUD and both tactical and 3D views; `public/3d.js` built on `three@0.180.0`; `public/style.css`, `public/3d.css`, `public/index.html`.
 - Legacy bootstrap `boot.js` extracts a compressed `source.bundle.b64` and patches part of `server.js` at runtime. **This is a maintainability/reproducibility risk.**
 - Existing tests in `test/` including `test/difficulty.test.js`, `test/engine.test.js`, `test/rooms.test.js` (verify actual paths).
-- Production hosting: `iron-frontier-rts` Render free web service; one replica because rooms are in memory. No changes to existing service configuration unless necessary and documented.
+- Production hosting: `homestand` Render free web service; one replica because rooms are in memory. No changes to existing service configuration unless necessary and documented.
 
 FIRST: audit Git tree, build and run scripts, static serving, asset paths, module loading, WebSockets, reconnects, game-state data contract, current controls, mobile layout and known race conditions. Document baseline behavior/screenshot, run `npm install && npm test`, and open the local app with browser automation. **Normalize the source layout** by making checked-in, editable source authoritative; remove the runtime source patching/unpacking dependency safely, while preserving all existing game behavior and a clean `npm start` and `npm test`. Keep back-out instructions and a working branch. Avoid a rewrite of the simulation/network layer.
 
@@ -71,7 +71,7 @@ Replace the toy-block aesthetic with **original cohesive RTS art**, while keepin
 - Add Playwright (or equivalent) E2E smoke coverage: load homepage, start Recruit AI, recruit one unit, issue command, capture relay in a feasible test game, return to menu/rematch; two different browser contexts create/join a room and see synchronized state. Include desktop 1366×768, phone 390×844 and landscape phone 844×390 tests, and capture actual screenshots.
 - Audit HTTP static paths and MIME types, module imports for `three.module.js`/`three.core.js`, CSP if applicable, and Render build output. Avoid security/privacy pitfalls and accidental file exposure. `GET /healthz` returns 200 JSON, game page 200, WebSocket upgrades work.
 - Produce `docs/IMPLEMENTATION_NOTES.md`, `docs/QA_REPORT.md`, `docs/ART_DIRECTION.md`, `docs/ASSET_CREDITS.md`, `docs/DEMO_SCRIPT.md`, and `docs/SUBMISSION_CHECKLIST.md` with accurate evidence. Document any bug not fixed and fallback instructions.
-- Do not blindly deploy to production until tests and smoke test pass; preserve a working 2D fallback. If connected credentials are available, deploy to the existing Render service `iron-frontier-rts`, not NEON HEIST. Confirm live commit SHA, Render healthy, game start, reconnect and rematch.
+- Do not blindly deploy to production until tests and smoke test pass; preserve a working 2D fallback. If connected credentials are available, deploy to the existing Render service `homestand`, not NEON HEIST. Confirm live commit SHA, Render healthy, game start, reconnect and rematch.
 - Record 30–60 seconds of real in-game action (not mocked gameplay). Produce three true screenshots: menu, hero battlefield and clear multiplayer room screen. Crop/resolution for Handshake after checking submission requirements.
 
 ## Sprint order and decision gates
