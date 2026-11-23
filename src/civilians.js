@@ -5,7 +5,7 @@
 //         held/captive → rescued (escorted by a defender) → safe. Any state on the field can be
 //         killed by stray fire (splash from shells, rockets, orbital strikes and IEDs).
 const MAPS=require('../public/maps');
-const L=()=>MAPS.layouts.frontier;
+
 
 const CIV={count:24,hp:40,walk:22,run:48,captureRange:26,captureTime:2.2,guardRange:90,rescueTime:2.2,panicRange:150,calm:14,
  carriers:{rifle:1,patrol:3},deliveryReward:150,rescueReward:120,heldIncome:1,casualtyPenalty:60,shelterCapacity:6};
@@ -14,7 +14,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
 const civilians={
  resetCivilians(){
-  const layout=L(),homes=[...layout.compounds.filter(c=>c.x>650&&c.x<1700),...layout.facilities.filter(f=>!f.outpost),layout.market];
+  const layout=this.territoryLayout(),homes=[...layout.compounds.filter(c=>c.x>650&&c.x<1700),...layout.facilities.filter(f=>!f.outpost),layout.market];
   this.civilians=[];this.civStats={saved:0,captured:0,rescued:0,casualties:[0,0],held:0};
   for(let i=0;i<CIV.count;i++){const home=homes[i%homes.length],x=home.x+((i*37)%60)-30,y=home.y+((i*53)%50)-25;
    this.civilians.push({id:'c'+i,name:NAMES[i%NAMES.length],x,y,hp:CIV.hp,state:'free',home:{x:home.x,y:home.y},dest:null,wait:(i%5)*.7,progress:0,by:null,calm:0,shelter:null})}
@@ -47,8 +47,8 @@ const civilians={
     const carrier=this.units.find(u=>u.id===c.by);
     if(!carrier){const was=c.state;c.state='fleeing';c.by=null;c.progress=0;c.calm=0;this.event((was==='captive'?'ESCORT DOWN - '+c.name.toUpperCase()+' BROKE FREE':c.name.toUpperCase()+' LOST THE ESCORT - FLEEING'),null);continue}
     this.civFollow(c,carrier,dt);
-    if(c.state==='captive'&&MAPS.territoryOf('frontier',c)===1&&dist(c,this.campOf(1))<140){c.state='held';c.by=null;c.dest=this.campOf(1);this.civStats.captured++;this.teams[1].credits+=CIV.deliveryReward;this.event(c.name.toUpperCase()+' TAKEN TO THE RAIDER CAMP',null);this.civReturnCarrier(carrier)}
-    else if(c.state==='rescued'&&(MAPS.territoryOf('frontier',c)===0||refuges.some(r=>dist(r,c)<70))){c.state='safe';c.by=null;this.civStats.rescued++;this.civStats.saved++;this.teams[0].credits+=CIV.rescueReward;this.event(c.name.toUpperCase()+' RESCUED AND SAFE',null);this.civReturnCarrier(carrier)}
+    if(c.state==='captive'&&MAPS.territoryOf(this.mapId,c)===1&&dist(c,this.campOf(1))<140){c.state='held';c.by=null;c.dest=this.campOf(1);this.civStats.captured++;this.teams[1].credits+=CIV.deliveryReward;this.event(c.name.toUpperCase()+' TAKEN TO THE RAIDER CAMP',null);this.civReturnCarrier(carrier)}
+    else if(c.state==='rescued'&&(MAPS.territoryOf(this.mapId,c)===0||refuges.some(r=>dist(r,c)<70))){c.state='safe';c.by=null;this.civStats.rescued++;this.civStats.saved++;this.teams[0].credits+=CIV.rescueReward;this.event(c.name.toUpperCase()+' RESCUED AND SAFE',null);this.civReturnCarrier(carrier)}
     continue;
    }
    if(c.state==='held'){

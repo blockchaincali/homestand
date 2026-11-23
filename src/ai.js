@@ -20,7 +20,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
 class FactionAI{
  constructor(game,team,level='standard'){this.game=game;this.team=team;this.level=PROFILES[level]?level:'standard';this.p=game.variantProfile?game.variantProfile(PROFILES[this.level]):PROFILES[this.level];this.clock=0;this.lastAttack=-1e9;this.opening=null;this.attackers=new Set();this.attackCount=0}
- get layout(){return MAPS.layouts.frontier}
+ get layout(){return MAPS.layouts[this.game.mapId]||MAPS.layouts.frontier}
  get hq(){return this.game.bases.find(b=>b.team===this.team&&b.kind==='hq'&&b.hp>0)}
  get enemyHq(){return this.game.bases.find(b=>b.team!==this.team&&b.kind==='hq'&&b.hp>0)}
  own(type){return this.game.units.filter(u=>u.team===this.team&&(!type||u.type===type))}
@@ -56,7 +56,7 @@ class FactionAI{
  siteFor(type){
   const g=this.game,def=STRUCTURES[type],state={nodes:g.nodes,structures:g.structures},hq=this.hq;
   if(def.size==='large'){
-   const usable=this.layout.plots.filter(p=>MAPS.plotStatus('frontier',p,this.team,state).ok),preferred=usable.filter(p=>type==='collector'?p.kind==='resource':p.kind!=='resource'),plots=(preferred.length?preferred:usable).sort((a,b)=>(a.team===this.team?0:1)-(b.team===this.team?0:1)||dist(a,hq)-dist(b,hq));
+   const usable=this.layout.plots.filter(p=>MAPS.plotStatus(this.game.mapId,p,this.team,state).ok),preferred=usable.filter(p=>type==='collector'?p.kind==='resource':p.kind!=='resource'),plots=(preferred.length?preferred:usable).sort((a,b)=>(a.team===this.team?0:1)-(b.team===this.team?0:1)||dist(a,hq)-dist(b,hq));
    return plots[0]?{x:plots[0].x,y:plots[0].y,plotId:plots[0].id}:null;
   }
   for(const spot of this.layout.defenceSpots[this.team]){if(g.structures.some(s=>s.hp>0&&dist(s,spot)<70))continue;if(g.territorySite(this.team,type,spot.x,spot.y).ok)return {x:spot.x,y:spot.y}}
@@ -114,7 +114,7 @@ class FactionAI{
   // Defend home territory first.
   // The defence also treats the town and its outposts as home ground.
   const guarded=this.team===0?g.facilities.filter(f=>f.hp>0):[];
-  const intruders=g.units.filter(u=>u.team!==this.team&&(MAPS.territoryOf('frontier',u)===this.team||guarded.some(f=>dist(f,u)<300)));
+  const intruders=g.units.filter(u=>u.team!==this.team&&(MAPS.territoryOf(this.game.mapId,u)===this.team||guarded.some(f=>dist(f,u)<300)));
   if(intruders.length){const c={x:intruders.reduce((s,u)=>s+u.x,0)/intruders.length,y:intruders.reduce((s,u)=>s+u.y,0)/intruders.length};this.send(home.filter(u=>dist(u,c)<900),[c])}
   // Re-target attackers that reached their objective.
   for(const u of army.filter(u=>this.attackers.has(u.id)&&(!u.dest||dist(u,u.dest)<40)&&!u.path?.length)){const target=this.pickTarget(this.opening||'central');if(target)this.send([u],[target])}

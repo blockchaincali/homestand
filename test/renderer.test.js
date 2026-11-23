@@ -22,7 +22,7 @@ test('map definitions drive three environments and bounded extended terrain',()=
  assert.deepEqual(maps.ids,['coastal','desert','frozen']);
  for(const id of maps.ids){const map=maps.get(id);assert.equal(map.id,id);assert.ok(map.name&&map.description&&Number.isInteger(map.seed))}
  assert.match(renderer,/geo\('plane',220,180\)/);
- assert.match(renderer,/desiredRange-delta\*17,11,86/);
+ assert.match(renderer,/desiredRange-delta\*17,11,maxRange\(\)/);assert.match(renderer,/maxRange=\(\)=>86\*mapScale\(\)/);
  assert.match(renderer,/cameraBounds\(\)/);
  assert.match(renderer,/addBiomeBoundary\(\)/);
  assert.match(gameUi,/name="battlefield"/);

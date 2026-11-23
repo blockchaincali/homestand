@@ -5,12 +5,14 @@ import {mergeGeometries} from '/vendor/BufferGeometryUtils.js';
 // primitives, baked with vertex colour and height-based ambient occlusion, then merged
 // per material. The whole district renders in a handful of draw calls and is
 // shared by the battle renderer and the cinematic homepage.
-const W=2400,H=1350,S=30,TAU=Math.PI*2;
+// World size follows the active layout (Frontier Outskirts is 4000 x 2000); see setLayout.
+let W=2400,H=1350;const S=30,TAU=Math.PI*2;
 export const toX=x=>(x-W/2)/S,toZ=y=>(y-H/2)/S;
 const MAPS=globalThis.HomestandMaps;
 // The authored layout in use: Safe Haven's town or the Territory War frontier.
 let layoutId='safe-haven';
-export function setLayout(id){layoutId=MAPS.layouts[id]?id:'safe-haven';return layoutId}
+export function setLayout(id){layoutId=MAPS.layouts[id]?id:'safe-haven';const size=MAPS.size?.(layoutId)||{w:2400,h:1350};W=size.w;H=size.h;return layoutId}
+export const worldSize=()=>({w:W,h:H});
 export const layout=()=>MAPS.layouts[layoutId];
 
 export const C={cream:0xeadcc0,peach:0xe2b088,sky:0x9fc6d2,mint:0xb7d3b0,ochre:0xd9a85c,rose:0xdba59c,white:0xf1ede3,lime:0xc9cf8a,
@@ -131,17 +133,34 @@ export function townScenery(k,{quality='high',lite=false}={}){
  for(const [x,y] of L.signs||[[940,676],[1120,676],[940,330],[940,880],[560,830]]){const bx=toX(x)+1.2,bz=toZ(y)-1.15;k.box('metal',C.steel,bx,0,bz,.05,1.4,.05,0,0);k.box('paint',0x2d7a4a,bx,1.25,bz,.75,.28,.04,0,0)}
  const T=look();for(const f of L.forests){const n=Math.round(f.r*f.r/900*dense*.55*T.trees);for(let i=0;i<n;i++){const a=rng()*TAU,r=Math.sqrt(rng())*f.r,x=toX(f.x+Math.cos(a)*r),z=toZ(f.y+Math.sin(a)*r*.8);const t=rng();if(t<.45)mango(k,x,z,.75+rng()*.5);else if(t<.75)neem(k,x,z,.8+rng()*.4);else palm(k,x,z,.85+rng()*.35)}}
  const clear=(x,y)=>L.compounds.every(c=>Math.hypot(c.x-x,c.y-y)>c.w*.7)&&L.roads.every(r=>r.points.every(([px,py],i)=>{const n=r.points[i+1];if(!n)return true;const dx=n[0]-px,dy=n[1]-py,len2=dx*dx+dy*dy,t=Math.max(0,Math.min(1,((x-px)*dx+(y-py)*dy)/len2));return Math.hypot(px+dx*t-x,py+dy*t-y)>r.width*.5+26}))&&Math.hypot(x-250,y-680)>120&&Math.hypot(x-2190,y-675)>110&&!(L.noScatter||[]).some(r=>x>r.x1&&x<r.x2&&y>r.y1&&y<r.y2)&&!(L.plots||[]).some(p=>Math.hypot(p.x-x,p.y-y)<p.r+30)&&!(L.facilities||[]).some(f=>Math.hypot(f.x-x,f.y-y)<80)&&!(L.checkpointNodes||[]).some(n=>Math.hypot(n.x-x,n.y-y)<110);
- const scatter=lite?160:Math.round(640*dense);for(let i=0;i<scatter;i++){const x=60+rng()*2280,y=60+rng()*1230;if(!clear(x,y))continue;const t=rng(),X=toX(x),Z=toZ(y);if(!L.territories&&x>300&&x<760&&y>320&&y<820&&t<.75)continue;if(t<.32&&rng()>T.trees)continue;if(t<.32&&rng()<T.dry)acacia(k,X,Z,.8+rng()*.4);else if(t<.16)mango(k,X,Z,.7+rng()*.45);else if(t<.26)palm(k,X,Z,.8+rng()*.3);else if(t<.32)neem(k,X,Z,.7+rng()*.3);else if(t<.62)shrub(k,X,Z,.7+rng()*.6);else if(t<.9)grass(k,X,Z,1+rng());else if(t<.95)termite(k,X,Z,.7+rng()*.5);else k.rock('matte',C.granite,X,.1,Z,.6+rng()*.6,.4,.5+rng()*.5,rng()*TAU)}
+ const kx=W/2400,kz=H/1350,area=Math.min(2,kx*kz),scatter=lite?Math.round(160*area):Math.round(640*dense*area);for(let i=0;i<scatter;i++){const x=60+rng()*(W-120),y=60+rng()*(H-120);if(!clear(x,y))continue;const t=rng(),X=toX(x),Z=toZ(y);if(!L.territories&&x>300&&x<760&&y>320&&y<820&&t<.75)continue;if(t<.32&&rng()>T.trees)continue;if(t<.32&&rng()<T.dry)acacia(k,X,Z,.8+rng()*.4);else if(t<.16)mango(k,X,Z,.7+rng()*.45);else if(t<.26)palm(k,X,Z,.8+rng()*.3);else if(t<.32)neem(k,X,Z,.7+rng()*.3);else if(t<.62)shrub(k,X,Z,.7+rng()*.6);else if(t<.9)grass(k,X,Z,1+rng());else if(t<.95)termite(k,X,Z,.7+rng()*.5);else k.rock('matte',C.granite,X,.1,Z,.6+rng()*.6,.4,.5+rng()*.5,rng()*TAU)}
  // Granite inselbergs and low hills frame the district beyond the playable boundary.
  // Terraced escarpments and dense bush belts frame the battlefield beyond the playable area.
- const hills=lite?8:16;for(let i=0;i<hills;i++){const a=i/hills*TAU+rng()*.2,x=Math.cos(a)*(50+rng()*8),z=Math.sin(a)*(31+rng()*5),top=terrace(k,x,z,4+rng()*4,2+Math.floor(rng()*2),T.dry);if(!lite)for(let j=0;j<4;j++)(T.dry>.4?acacia:mango)(k,x+(rng()-.5)*4,z+(rng()-.5)*4,(.9+rng()*.5))}
- if(!lite)for(let i=0;i<Math.round(260*dense);i++){const a=rng()*TAU,x=Math.cos(a)*(42+rng()*14),z=Math.sin(a)*(25.5+rng()*9);const t=rng();if(t<.35*T.trees)(T.dry>.5?acacia:mango)(k,x,z,.8+rng()*.6);else if(t<.7)shrub(k,x,z,1+rng()*.8);else grass(k,x,z,1.2+rng())}
+ const hills=Math.round((lite?8:16)*Math.max(1,kx));for(let i=0;i<hills;i++){const a=i/hills*TAU+rng()*.2,x=Math.cos(a)*(50+rng()*8)*kx,z=Math.sin(a)*(31+rng()*5)*kz,top=terrace(k,x,z,4+rng()*4,2+Math.floor(rng()*2),T.dry);if(!lite)for(let j=0;j<4;j++)(T.dry>.4?acacia:mango)(k,x+(rng()-.5)*4,z+(rng()-.5)*4,(.9+rng()*.5))}
+ if(!lite)for(let i=0;i<Math.round(260*dense);i++){const a=rng()*TAU,x=Math.cos(a)*(42+rng()*14)*kx,z=Math.sin(a)*(25.5+rng()*9)*kz;const t=rng();if(t<.35*T.trees)(T.dry>.5?acacia:mango)(k,x,z,.8+rng()*.6);else if(t<.7)shrub(k,x,z,1+rng()*.8);else grass(k,x,z,1.2+rng())}
  // Base clutter: drums, crates, sandbags and tyres around the plots and HQs.
  for(const p of (L.plots||[]).filter(p=>p.kind!=='forward'))for(let i=0;i<(lite?1:2);i++){const a=rng()*TAU,d=p.r*1.15;clutter(k,toX(p.x+Math.cos(a)*d),toZ(p.y+Math.sin(a)*d),.9)}
- const ring=lite?20:44;for(let i=0;i<ring;i++){const a=i/ring*TAU+rng()*.1,rx=46+rng()*16,rz=29+rng()*12,x=Math.cos(a)*rx,z=Math.sin(a)*rz,s=2.5+rng()*4.5;if(i%3===0)k.rock('matte',C.granite,x,-.4,z,s*1.4,s*.9,s*1.2,rng()*TAU);else k.blob('matte',T.dry>.4?(i%2?0xc8a774:0xb9935f):i%2?0x7f7c4a:0x8a8150,x,-s*.35,z,s*2.2,s*.9,s*1.8,rng()*TAU,.25);if(rng()<.6*T.trees)(T.dry>.4?acacia:mango)(k,x*.92,z*.92,1+rng()*.6)}
+ const ring=lite?20:44;for(let i=0;i<ring;i++){const a=i/ring*TAU+rng()*.1,rx=(46+rng()*16)*kx,rz=(29+rng()*12)*kz,x=Math.cos(a)*rx,z=Math.sin(a)*rz,s=2.5+rng()*4.5;if(i%3===0)k.rock('matte',C.granite,x,-.4,z,s*1.4,s*.9,s*1.2,rng()*TAU);else k.blob('matte',T.dry>.4?(i%2?0xc8a774:0xb9935f):i%2?0x7f7c4a:0x8a8150,x,-s*.35,z,s*2.2,s*.9,s*1.8,rng()*TAU,.25);if(rng()<.6*T.trees)(T.dry>.4?acacia:mango)(k,x*.92,z*.92,1+rng()*.6)}
+ baseWalls(k,L);
  theatreLandmark(k);
 }
 
+// Base walls (Frontier Outskirts): a walled compound per side so bases never read as part of the town.
+// Gaps open automatically wherever a road crosses the wall line.
+function wallGaps(L,edge){const gaps=[];for(const r of L.roads)for(let i=1;i<r.points.length;i++){const [ax,ay]=r.points[i-1],[bx,by]=r.points[i];
+  if(edge.axis==='x'){if((ax-edge.at)*(bx-edge.at)<=0&&ax!==bx){const t=(edge.at-ax)/(bx-ax),y=ay+(by-ay)*t;if(y>edge.from&&y<edge.to)gaps.push([y-r.width/2-34,y+r.width/2+34])}}
+  else if((ay-edge.at)*(by-edge.at)<=0&&ay!==by){const t=(edge.at-ay)/(by-ay),x=ax+(bx-ax)*t;if(x>edge.from&&x<edge.to)gaps.push([x-r.width/2-34,x+r.width/2+34])}}
+ gaps.sort((a,b)=>a[0]-b[0]);const runs=[];let cur=edge.from;for(const [a,b] of gaps){if(a>cur)runs.push([cur,a]);cur=Math.max(cur,b)}if(cur<edge.to)runs.push([cur,edge.to]);return runs}
+export function baseWalls(k,L){for(const w of L.walls||[]){const def=w.team===0,edges=[{axis:'y',at:w.y1,from:w.x1,to:w.x2},{axis:'y',at:w.y2,from:w.x1,to:w.x2},{axis:'x',at:w.x1,from:w.y1,to:w.y2},{axis:'x',at:w.x2,from:w.y1,to:w.y2}];
+ for(const e of edges)for(const [a,b] of wallGaps(L,e)){const len=(b-a)/S,mid=(a+b)/2,X=e.axis==='x'?toX(e.at):toX(mid),Z=e.axis==='x'?toZ(mid):toZ(e.at),ry=e.axis==='x'?Math.PI/2:0;
+  if(def){k.box('matte',C.concrete,X,0,Z,len,1.05,.34,ry,.04);k.box('paint',C.teal,X,.78,Z,len*1.002,.12,.36,ry,0);k.box('matte',0xb9b3a6,X,1.05,Z,len,.1,.42,ry,.02)}
+  else k.box('matte',0x6b4a2c,X,0,Z,len,.95,.24,ry,.03);
+  const step=def?140:46,n=Math.max(1,Math.round((b-a)/step));for(let i=0;i<=n;i++){const v=a+(b-a)*i/n,px=e.axis==='x'?toX(e.at):toX(v),pz=e.axis==='x'?toZ(v):toZ(e.at);
+   if(def)k.box('matte',0xc9c3b6,px,0,pz,.46,1.3,.46,0,.05);else k.cone('matte',0x8a6438,px,.9,pz,.13,.55,5)}
+  // Gate posts either side of each opening.
+  for(const end of [a,b]){if(end===e.from||end===e.to)continue;const px=e.axis==='x'?toX(e.at):toX(end),pz=e.axis==='x'?toZ(end):toZ(e.at);k.box('matte',def?0x8f8a80:0x5a3d24,px,0,pz,.7,1.9,.7,0,.06);k.box('paint',def?C.teal:0xb8442e,px,1.9,pz,.76,.16,.76,0,0)}}
+ // Corner watch posts.
+ for(const [x,y] of [[w.x1,w.y1],[w.x2,w.y1],[w.x1,w.y2],[w.x2,w.y2]]){const X=toX(x),Z=toZ(y);for(const dx of [-.4,.4])for(const dz of [-.4,.4])k.box('metal',def?C.steel:0x4a3520,X+dx,0,Z+dz,.1,2.6,.1,0,0);k.box('matte',def?0xd6d0c4:0x6b4a2c,X,2.5,Z,1.3,.18,1.3,0,.04);k.box('paint',def?C.teal:0x9b3a26,X,2.68,Z,1.1,.5,1.1,0,.04)}}}
 // ---------- Mission buildings (entities) ----------
 export function facilityMesh(kind,id){
  const k=new Kit(id?[...id].reduce((a,c)=>a*31+c.charCodeAt(0)>>>0,7):7);

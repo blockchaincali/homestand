@@ -9,6 +9,7 @@
   desert:{id:'desert',name:'Desert Front',tagline:'Canyon strike corridor',description:'Command armored columns between wind-cut mesas, dunes, dusty outposts, and sparse desert scrub.',seed:0xd35e7a11,colors:{ground:'#ad824c',road:'#655341',water:'#8f673d',accent:'#ffbb66',minimap:'#a47745'},atmosphere:{fog:0xc28d5e,skyTop:'#53382f',skyMid:'#c27d55',skyLow:'#f1c98b',sun:0xffbd78}},
   frozen:{id:'frozen',name:'Frozen Territory',tagline:'Glacial relay basin',description:'Advance across snowfields, frozen rivers, black-rock cliffs, winter pines, and isolated polar facilities.',seed:0xf20a6e91,colors:{ground:'#c5d5d7',road:'#58646a',water:'#83c7d8',accent:'#9cecff',minimap:'#a8c8cf'},atmosphere:{fog:0xa9c5ce,skyTop:'#233b55',skyMid:'#6f91a4',skyLow:'#dcecf0',sun:0xd9efff}}
   ,frontier:{id:'frontier',name:'Territory War',tagline:'Two territories, one community',description:'Build up your territory, hold the contested routes and protect or raid the town between the lines.',seed:0x7e3f0a51,colors:{ground:'#8b754f',road:'#b08d59',water:'#4d8b91',accent:'#ffd06b',minimap:'#7d7a4f'},atmosphere:{fog:0xc9a77c,skyTop:'#4a7b8f',skyMid:'#a9c2b4',skyLow:'#ecc58a',sun:0xffd9a0}}
+  ,outskirts:{id:'outskirts',name:'Frontier Outskirts',tagline:'Build outside the city, fight inside it',description:'A larger battlefield: each side builds in a walled base outside the city, then fights for the checkpoints and streets in between.',seed:0x7e3f0a51,colors:{ground:'#8b754f',road:'#b08d59',water:'#4d8b91',accent:'#ffd06b',minimap:'#7d7a4f'},atmosphere:{fog:0xc9a77c,skyTop:'#4a7b8f',skyMid:'#a9c2b4',skyLow:'#ecc58a',sun:0xffd9a0}}
   ,'safe-haven':{id:'safe-haven',name:'Operation Safe Haven',tagline:'Civilian protection mission',description:'Fortify a fictional Nigerian town, protect community facilities, and secure the evacuation road.',seed:0x9a17e2c4,colors:{ground:'#8b754f',road:'#b08d59',water:'#4d8b91',accent:'#49d5c9',minimap:'#7d7a4f'},atmosphere:{fog:0xc9a77c,skyTop:'#4a7b8f',skyMid:'#a9c2b4',skyLow:'#ecc58a',sun:0xffd9a0}}
  };
  // Authored district plan shared by every Safe Haven theatre (originally the composite town of Kachia). World units match the
@@ -103,6 +104,66 @@
   signs:[[860,650],[1225,650],[700,1040],[1225,215],[1225,1085]],
   evacuationPoint:{x:200,y:675}
  };
+ // Frontier Outskirts: a larger Territory War map (4000 x 2000) that separates building from
+ // fighting. Each side builds inside a walled base outside the city, then sends troops in
+ // through its gates. The city in the middle holds the civilians, facilities and the three
+ // checkpoints, with wide streets and open squares so squads and armour can manoeuvre.
+ const OW=4000,mirrorO=list=>list.map(p=>({...p,id:p.id.replace(/^d/,'r'),x:OW-p.x}));
+ const outskirtsPlots=[
+  {id:'dA',x:330,y:420},{id:'dB',x:560,y:420},{id:'dC',x:790,y:420},{id:'dD',x:560,y:720},{id:'dE',x:790,y:720},
+  {id:'dF',x:560,y:1280},{id:'dG',x:790,y:1280},{id:'dH',x:330,y:1580},{id:'dI',x:560,y:1580},{id:'dJ',x:790,y:1580}
+ ].map(p=>({...p,team:0,kind:'base',r:55}));
+ const city=[1480,1830,2170,2520];
+ layouts.outskirts={
+  size:{w:OW,h:2000},
+  territories:[{team:0,name:'Community Defence Base',x1:125,x2:1050,y1:105,y2:1895},{team:1,name:'Raider Camp',x1:2950,x2:3875,y1:105,y2:1895}],
+  // Walled compounds drawn around each base; gaps in the wall where the roads leave for the city.
+  walls:[{team:0,x1:200,x2:990,y1:300,y2:1700,gates:[560,1000,1440],gateSide:'east'},{team:1,x1:OW-990,x2:OW-200,y1:300,y2:1700,gates:[560,1000,1440],gateSide:'west'}],
+  hq:[{x:430,y:1000},{x:OW-430,y:1000}],
+  plots:[...outskirtsPlots,...mirrorO(outskirtsPlots).map(p=>({...p,team:1})),
+   {id:'fNW',x:1250,y:720,team:null,kind:'forward',r:55},{id:'fSW',x:1250,y:1280,team:null,kind:'forward',r:55},
+   {id:'fNE',x:2750,y:720,team:null,kind:'forward',r:55},{id:'fSE',x:2750,y:1280,team:null,kind:'forward',r:55},
+   {id:'res0',x:330,y:1280,team:0,kind:'resource',r:55,resource:'Brick kiln'},{id:'res1',x:OW-330,y:720,team:1,kind:'resource',r:55,resource:'Sand pit'},
+   {id:'resN',x:1250,y:420,team:null,kind:'resource',r:55,resource:'Grain silos'},{id:'resS',x:2750,y:1580,team:null,kind:'resource',r:55,resource:'Fuel depot'}],
+  checkpointNodes:[{id:'cpN',x:2000,y:560,name:'NORTH CHECKPOINT',route:'north'},{id:'cpC',x:2000,y:1000,name:'CENTRAL JUNCTION',route:'central'},{id:'cpS',x:2000,y:1440,name:'SOUTH CHECKPOINT',route:'south'}],
+  facilities:[{id:'facility-clinic',kind:'civilianClinic',x:city[1],y:780,slot:'clinic'},{id:'facility-school',kind:'community',x:city[2],y:780,slot:'school'},{id:'facility-market',kind:'market',x:city[2],y:1220,slot:'market'},{id:'facility-centre',kind:'community',x:city[1],y:1220,slot:'centre'},
+   {id:'outpost-north',kind:'community',x:2000,y:200,slot:'outpostNorth',outpost:true},{id:'outpost-south',kind:'community',x:2000,y:1800,slot:'outpostSouth',outpost:true}],
+  defenceSpots:[[{x:1050,y:490},{x:1050,y:630},{x:1050,y:930},{x:1050,y:1070},{x:1050,y:1370},{x:1050,y:1510}],[{x:OW-1050,y:490},{x:OW-1050,y:630},{x:OW-1050,y:930},{x:OW-1050,y:1070},{x:OW-1050,y:1370},{x:OW-1050,y:1510}]],
+  rally:[{x:1130,y:1000},{x:OW-1130,y:1000}],
+  routes:{north:[{x:1060,y:560},{x:2000,y:560},{x:2940,y:560}],central:[{x:1150,y:1000},{x:2000,y:1000},{x:2850,y:1000}],south:[{x:1060,y:1440},{x:2000,y:1440},{x:2940,y:1440}]},
+  zones:[
+   {id:'defence',name:'Community Defence Base',x:590,y:1000,r:520},{id:'raiders',name:'Raider Camp',x:OW-590,y:1000,r:520},
+   {id:'residential',name:'City',x:2000,y:1000,r:600},{id:'outpostNorth',name:'North Outpost',x:2000,y:200,r:120},{id:'outpostSouth',name:'South Outpost',x:2000,y:1800,r:120},
+   {id:'contested',name:'Contested Ground',x:2000,y:1000,r:420}
+  ],
+  roads:[
+   {id:'highway',surface:'asphalt',width:110,points:[[60,1000],[1000,1000],[2000,1000],[3000,1000],[3940,1000]]},
+   {id:'north-road',surface:'asphalt',width:84,points:[[430,560],[1000,560],[2000,560],[3000,560],[OW-430,560]]},
+   {id:'south-road',surface:'asphalt',width:84,points:[[430,1440],[1000,1440],[2000,1440],[3000,1440],[OW-430,1440]]},
+   {id:'west-avenue',surface:'asphalt',width:84,points:[[1650,240],[1650,1000],[1650,1760]]},
+   {id:'east-avenue',surface:'asphalt',width:84,points:[[2350,240],[2350,1000],[2350,1760]]},
+   {id:'defence-yard',surface:'laterite',width:60,points:[[430,560],[430,1000],[430,1440]]},
+   {id:'raider-yard',surface:'laterite',width:60,points:[[OW-430,560],[OW-430,1000],[OW-430,1440]]},
+   {id:'outpost-lane',surface:'laterite',width:44,points:[[2000,200],[2000,560]]},
+   {id:'outpost-lane-south',surface:'laterite',width:44,points:[[2000,1440],[2000,1800]]}
+  ],
+  compounds:[
+   {x:city[0],y:780,w:120,d:86,rot:.02,style:0},{x:city[3],y:780,w:120,d:86,rot:-.02,style:1,storeys:2},
+   {x:city[0],y:1220,w:120,d:86,rot:-.03,style:2},{x:city[3],y:1220,w:120,d:86,rot:.03,style:3},
+   {x:city[0],y:360,w:110,d:80,rot:.04,style:4},{x:city[1],y:360,w:110,d:80,rot:-.02,style:1,storeys:2},{x:city[2],y:360,w:110,d:80,rot:.03,style:2},{x:city[3],y:360,w:110,d:80,rot:-.04,style:0},
+   {x:city[0],y:1640,w:110,d:80,rot:-.03,style:3},{x:city[1],y:1640,w:110,d:80,rot:.02,style:0},{x:city[2],y:1640,w:110,d:80,rot:-.02,style:4,storeys:2},{x:city[3],y:1640,w:110,d:80,rot:.04,style:1}
+  ],
+  market:{x:2000,y:1225,w:150,d:60},
+  field:{x:2000,y:1000,w:1,d:1,skip:true},
+  checkpoints:[{x:2000,y:1000,rot:0},{x:2000,y:560,rot:0},{x:2000,y:1440,rot:0}],
+  staging:{x:OW-590,y:1000,w:760,d:1360,sparse:true},
+  forests:[{x:250,y:190,r:90},{x:250,y:1810,r:90},{x:OW-250,y:190,r:90},{x:OW-250,y:1810,r:90},{x:1220,y:200,r:80},{x:OW-1220,y:1800,r:80},{x:1250,y:1820,r:70},{x:OW-1250,y:180,r:70},{x:1200,y:860,r:45},{x:OW-1200,y:1140,r:45}],
+  pads:[{x:430,y:1000,r:170,c:'rgba(124,122,118,A)'},{x:OW-430,y:1000,r:170,c:'rgba(120,92,64,A)'},{x:595,y:1000,r:560,c:'rgba(138,134,124,A)'},{x:OW-595,y:1000,r:560,c:'rgba(136,104,72,A)'},{x:2000,y:1000,r:180,c:'rgba(150,140,120,A)'}],
+  noScatter:[{x1:125,x2:1060,y1:105,y2:1895},{x1:2940,x2:3875,y1:105,y2:1895},{x1:1350,x2:2650,y1:280,y2:1720}],
+  billboards:[[1720,940,'blue'],[2280,1060,'red'],[2060,640,'green']],
+  signs:[[1040,980],[OW-1040,1020],[2030,540],[2030,1420],[1700,980]],
+  evacuationPoint:{x:260,y:1000}
+ };
  // Plot occupancy and the build area are shared by the server (validation) and the
  // client (placement preview) so the two can never disagree.
  const pointInRect=(p,r)=>p.x>=r.x1&&p.x<=r.x2&&p.y>=r.y1&&p.y<=r.y2;
@@ -133,6 +194,8 @@
   for(const c of layout.checkpoints)list.push({x:c.x,y:c.y-56,radius:26},{x:c.x,y:c.y+56,radius:26});
   return list;
  }
+ // World size per map; maps without their own size use the classic 2400 x 1350 frame.
+ const size=id=>layouts[id]?.size||{w:2400,h:1350},territoryLayouts=Object.freeze(['frontier','outskirts']);
  const ids=Object.freeze(['coastal','desert','frozen']);
  const get=id=>maps[id]||maps.coastal;
  // Campaign theatres: real Nigerian cities that have lived through insurgent violence.
@@ -237,6 +300,6 @@
  const setEdition=value=>{currentEdition=value==='lagoslife'?'lagoslife':'standard';return currentEdition};
  const theatre=(id,edition=currentEdition)=>{const base=theatres[id]||theatres[theatreIds[0]];if(edition!=='lagoslife')return base;return softTheatres[base.id]||(softTheatres[base.id]=Object.freeze(softenDeep(base)))};
  // Map metadata as a battle sees it: Safe Haven battles take the theatre's light and name.
- const forState=state=>{const base=get(state?.mapId);if(!['safe-haven','frontier'].includes(base.id)||!state?.theatreId)return base;const t=theatre(state.theatreId);return {...base,name:base.id==='frontier'?'Territory War · '+t.city:t.operation,theatre:t,atmosphere:{...base.atmosphere,...t.atmosphere}}};
- return Object.freeze({maps:Object.freeze(maps),layouts:Object.freeze(layouts),blockers,ids,get,defaultId:'coastal',theatres:Object.freeze(theatres),theatreIds,theatre,soften,setEdition,edition:()=>currentEdition,forState,territoryOf,clearOfRoads,inBuildArea,plotStatus,isTown:id=>id==='safe-haven'||id==='frontier'});
+ const forState=state=>{const base=get(state?.mapId);if(!['safe-haven','frontier','outskirts'].includes(base.id)||!state?.theatreId)return base;const t=theatre(state.theatreId);return {...base,name:base.id==='frontier'?'Territory War · '+t.city:t.operation,theatre:t,atmosphere:{...base.atmosphere,...t.atmosphere}}};
+ return Object.freeze({maps:Object.freeze(maps),layouts:Object.freeze(layouts),blockers,ids,get,size,territoryLayouts,defaultId:'coastal',theatres:Object.freeze(theatres),theatreIds,theatre,soften,setEdition,edition:()=>currentEdition,forState,territoryOf,clearOfRoads,inBuildArea,plotStatus,isTown:id=>id==='safe-haven'||id==='frontier'||id==='outskirts'});
 });

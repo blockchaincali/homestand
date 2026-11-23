@@ -6,7 +6,7 @@ const {UNITS,STRUCTURES,CATALOG}=require('./config');
 const MAPS=require('../public/maps');
 const {FactionAI}=require('./ai');
 
-const L=()=>MAPS.layouts.frontier;
+
 const PREP_CHOICES=[3,5],WARNING_SECONDS=120,LIVE_SECONDS=20*60,WIN_POINTS=1500,CREDIT_CAP=2000;
 const OUTPOST_NAMES={outpostNorth:'Tudun Wada Outpost',outpostSouth:'Rafin Gari Outpost'};
 const FACILITY_HP={civilianClinic:1500,market:1400,community:1400},OUTPOST_HP=1000;
@@ -22,7 +22,7 @@ const territory={
  },
  builtTypes(team){return this.structures.filter(s=>s.team===team&&s.status==='active'&&s.hp>0).map(s=>s.type)},
  resetTerritory(){
-  const layout=L(),T=this.theatre;
+  const layout=this.territoryLayout(),T=this.theatre;
   this.teams=[0,1].map(()=>({credits:600,energy:100,points:0,kills:0,powerCooldown:0}));
   this.nodes=layout.checkpointNodes.map(n=>({...n,owner:-1,progress:0}));
   this.bases=layout.hq.map((p,team)=>({id:'hq'+team,kind:'hq',team,x:p.x,y:p.y,hp:2200,maxHp:2200,radius:58,cd:0,range:200,production:null}));
@@ -90,7 +90,7 @@ const territory={
  },
  territoryIncome(seconds){
   for(let team=0;team<2;team++){const own=this.structures.filter(s=>s.team===team&&s.status==='active'&&s.hp>0&&!(s.hackedUntil>this.time)),checkpoints=this.nodes.filter(n=>n.owner===team).length;
-   const income=8+own.filter(s=>s.type==='collector').reduce((sum,s)=>sum+(L().plots.find(p=>p.id===s.plotId)?.kind==='resource'?STRUCTURES.collector.siteIncome:STRUCTURES.collector.income),0)+checkpoints*4+(team===0&&this.facilities.some(f=>f.kind==='market'&&f.hp>0)?3:0);
+   const income=8+own.filter(s=>s.type==='collector').reduce((sum,s)=>sum+(this.territoryLayout().plots.find(p=>p.id===s.plotId)?.kind==='resource'?STRUCTURES.collector.siteIncome:STRUCTURES.collector.income),0)+checkpoints*4+(team===0&&this.facilities.some(f=>f.kind==='market'&&f.hp>0)?3:0);
    this.teams[team].credits=Math.min(CREDIT_CAP,this.teams[team].credits+income*seconds);
    this.teams[team].energy=Math.min(180,this.teams[team].energy+(1+own.filter(s=>s.type==='comms').length*STRUCTURES.comms.energy)*seconds);
   }
@@ -99,15 +99,15 @@ const territory={
  // Placement: any building fits any plot (resource sites included), or free ground anywhere in your
  // territory / build area that keeps roads, homes and other buildings clear.
  resolvePlot(team,type,x,y,plotId){
-  const layout=L(),state={nodes:this.nodes,structures:this.structures},point={x:Number(x),y:Number(y)};
+  const layout=this.territoryLayout(),state={nodes:this.nodes,structures:this.structures},point={x:Number(x),y:Number(y)};
   const plot=plotId?layout.plots.find(p=>p.id===plotId):layout.plots.filter(p=>Math.hypot(p.x-point.x,p.y-point.y)<=p.r+20).sort((a,b)=>Math.hypot(a.x-point.x,a.y-point.y)-Math.hypot(b.x-point.x,b.y-point.y))[0];
-  if(plot){const status=MAPS.plotStatus('frontier',plot,team,state);if(!status.ok)return status;return {ok:true,x:plot.x,y:plot.y,plotId:plot.id}}
+  if(plot){const status=MAPS.plotStatus(this.mapId,plot,team,state);if(!status.ok)return status;return {ok:true,x:plot.x,y:plot.y,plotId:plot.id}}
   return this.freeSite(team,type,point);
  },
  freeSite(team,type,point){
   const def=STRUCTURES[type];
-  if(!MAPS.inBuildArea('frontier',team,point,{nodes:this.nodes,structures:this.structures}))return {ok:false,reason:'Build inside your territory, near a checkpoint you hold, or beside your forward structures'};
-  if(!MAPS.clearOfRoads('frontier',point,def.radius))return {ok:false,reason:'Keep the roads open - move off the road'};
+  if(!MAPS.inBuildArea(this.mapId,team,point,{nodes:this.nodes,structures:this.structures}))return {ok:false,reason:'Build inside your territory, near a checkpoint you hold, or beside your forward structures'};
+  if(!MAPS.clearOfRoads(this.mapId,point,def.radius))return {ok:false,reason:'Keep the roads open - move off the road'};
   return {ok:true,x:point.x,y:point.y,plotId:null};
  },
  territorySite(team,type,x,y,plotId){
@@ -115,8 +115,8 @@ const territory={
   const missing=CATALOG.missing(type,this.builtTypes(team));if(missing.length)return {ok:false,reason:'Requires '+missing.map(m=>CATALOG.name(m,team)).join(' and ')};
   if(def.size==='large')return this.resolvePlot(team,type,x,y,plotId);
   const point={x:Number(x),y:Number(y)};
-  if(!MAPS.inBuildArea('frontier',team,point,{nodes:this.nodes,structures:this.structures}))return {ok:false,reason:'Build inside your territory, near a checkpoint you hold, or beside your forward structures'};
-  if(type!=='barricade'&&!MAPS.clearOfRoads('frontier',point,def.radius*.6))return {ok:false,reason:'Keep the roads open - only barricades go on a road'};
+  if(!MAPS.inBuildArea(this.mapId,team,point,{nodes:this.nodes,structures:this.structures}))return {ok:false,reason:'Build inside your territory, near a checkpoint you hold, or beside your forward structures'};
+  if(type!=='barricade'&&!MAPS.clearOfRoads(this.mapId,point,def.radius*.6))return {ok:false,reason:'Keep the roads open - only barricades go on a road'};
   return {ok:true,x:point.x,y:point.y,plotId:null};
  },
  assistStructure(team,structureId,builderIds){
@@ -131,7 +131,7 @@ const territory={
  buildRate(count){let rate=0;for(let i=0;i<Math.min(count,CATALOG.ASSIST_MAX);i++)rate+=Math.pow(CATALOG.ASSIST_FALLOFF,i);return rate},
  // Moves that would carry units into the enemy territory are refused while the ceasefire holds.
  ceasefireBlocks(team,x,y){
-  if(!this.ceasefire())return null;const owner=MAPS.territoryOf('frontier',{x,y});
+  if(!this.ceasefire())return null;const owner=MAPS.territoryOf(this.mapId,{x,y});
   return owner!==null&&owner!==team?'Ceasefire - you cannot enter enemy territory until the assault window opens':null;
  },
  territorySnapshot(){
