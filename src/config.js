@@ -7,7 +7,14 @@ const UNITS={
  engineer:{label:'Engineer Vehicle',short:'ENGINEER',cost:120,hp:180,speed:72,range:96,damage:5,fireRate:1.1,bulletSpeed:540,splash:0,radius:18,supply:2},
  scanner:{label:'Eagle-Eye Scanner',short:'SCANNER',cost:110,hp:170,speed:82,range:120,damage:6,fireRate:1.2,bulletSpeed:560,splash:0,radius:17,supply:2,scan:235,rocketRange:300,rocketDamage:34,rocketRate:2.2,rocketSplash:22},
  hacker:{label:'Cyber Team',short:'CYBER',cost:130,hp:70,speed:86,range:0,damage:0,fireRate:9,bulletSpeed:1,splash:0,radius:11,supply:1},
- patrol:{label:'Protected Patrol',short:'PATROL',cost:145,hp:250,speed:76,range:175,damage:26,fireRate:1.1,bulletSpeed:590,splash:14,radius:20,supply:3}
+ patrol:{label:'Protected Patrol',short:'PATROL',cost:145,hp:250,speed:76,range:175,damage:26,fireRate:1.1,bulletSpeed:590,splash:14,radius:20,supply:3},
+ // Tier 2 and 3 units, unlocked by upgrading the barracks, workshop and factory.
+ gunner:{label:'MG Team',short:'MG',cost:90,hp:110,speed:84,range:150,damage:7,fireRate:0.24,bulletSpeed:720,splash:0,radius:12,supply:2},
+ rpg:{label:'Anti-Armour Team',short:'AT',cost:100,hp:92,speed:86,range:175,damage:34,fireRate:2.1,bulletSpeed:430,splash:16,radius:12,supply:2,vsArmour:2.2},
+ sniper:{label:'Marksman Team',short:'SNIPER',cost:120,hp:72,speed:80,range:300,damage:58,fireRate:2.6,bulletSpeed:1300,splash:0,radius:11,supply:2},
+ apc:{label:'Armoured Carrier',short:'APC',cost:170,hp:360,speed:88,range:180,damage:15,fireRate:0.42,bulletSpeed:650,splash:8,radius:20,supply:3},
+ heavytank:{label:'Battle Tank',short:'MBT',cost:260,hp:580,speed:48,range:212,damage:68,fireRate:1.95,bulletSpeed:480,splash:38,radius:23,supply:5,vsArmour:1.3},
+ artillery:{label:'Howitzer',short:'ARTY',cost:240,hp:150,speed:50,range:390,damage:62,fireRate:3.6,bulletSpeed:300,splash:78,radius:20,supply:4}
 };
 const CATALOG=require('../public/catalog');
 // Safe Haven keeps its original names; the shared catalogue supplies every other structure.
@@ -22,6 +29,8 @@ const STRUCTURES=Object.fromEntries(Object.entries(CATALOG.STRUCTURES).map(([key
 // Improvised explosive devices. Hidden from the opposing side until an Eagle-Eye scanner
 // sweeps them; armed charges detonate when a hostile ground unit rolls over them.
 const IED={cost:45,arm:2.5,trigger:36,radius:110,damage:210,maxActive:6,plantRange:46,plantTime:2.2,defuseRange:44,defuseTime:3.4,salvage:30,planters:['rifle','engineer']};
+// Vehicles take reduced damage from IEDs and extra damage from anti-armour weapons.
+const VEHICLES=['tank','patrol','scanner','engineer','rocket','apc','heavytank','artillery'];
 const START_CREDITS=350, MAX_SUPPLY=50, MAX_TIME=360, WIN_SCORE=600;
 const NODES=[
  {x:1200,y:250,name:'NORTH RIDGE'},
@@ -30,4 +39,4 @@ const NODES=[
  {x:760,y:405,name:'FOREST OUTPOST',kind:'outpost',reward:'credits'},
  {x:1640,y:945,name:'EASTERN DEPOT',kind:'outpost',reward:'energy'}
 ];
-module.exports={W,H,BOUNDS,UNITS,STRUCTURES,CATALOG,IED,START_CREDITS,MAX_SUPPLY,MAX_TIME,WIN_SCORE,NODES};
+module.exports={W,H,BOUNDS,UNITS,VEHICLES,STRUCTURES,CATALOG,IED,START_CREDITS,MAX_SUPPLY,MAX_TIME,WIN_SCORE,NODES};

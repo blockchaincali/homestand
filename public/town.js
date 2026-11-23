@@ -239,9 +239,18 @@ function grainTexture(){const c=document.createElement('canvas');c.width=c.heigh
 function detailTexture(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d'),rng=rngFrom(91);x.fillStyle='#808080';x.fillRect(0,0,256,256);for(let i=0;i<2600;i++){const v=90+Math.floor(rng()*90);x.fillStyle=`rgb(${v},${v},${v})`;x.fillRect(rng()*256,rng()*256,1+rng()*3,1+rng()*2)}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(36,20);return t}
 
 // ---------- People and traffic (homepage and evacuation) ----------
+// Townspeople: shirt, arms, trousers and shoes in one instanced mesh, head and hair in another.
+// Vertex colours shade each part; the per-person instance colour tints the shirt (bodies) or skin (heads),
+// so trousers stay darker than shirts and hair stays dark whatever the tint.
+function shaded(geo,shade){const g=geo.index?geo.toNonIndexed():geo;for(const k of Object.keys(g.attributes))if(!['position','normal'].includes(k))g.deleteAttribute(k);const n=g.attributes.position.count,c=new Float32Array(n*3).fill(shade);g.setAttribute('color',new THREE.BufferAttribute(c,3));return g}
+function personGeometry(){const B=(w,h,d,x,y,z,rz=0,shade=1)=>{const g=new THREE.BoxGeometry(w,h,d);if(rz)g.rotateZ(rz);return shaded(g.translate(x,y,z),shade)};
+ return mergeGeometries([B(.075,.25,.085,-.048,.15,0,0,.38),B(.075,.25,.085,.048,.15,0,0,.38),B(.08,.045,.12,-.048,.025,.018,0,.16),B(.08,.045,.12,.048,.025,.018,0,.16),
+  B(.2,.06,.12,0,.29,0,0,.45),B(.21,.21,.125,0,.4,0),B(.055,.2,.065,-.132,.39,0,.1),B(.055,.2,.065,.132,.39,0,-.1),B(.05,.05,.06,0,.53,0,0,.9)],false)}
+function headGeometry(){const head=shaded(new THREE.SphereGeometry(.072,10,8).scale(.95,1.08,1).translate(0,.6,0),1),hair=shaded(new THREE.SphereGeometry(.076,10,6,0,Math.PI*2,0,Math.PI*.55).translate(0,.612,-.006),.16);
+ for(const g of [head,hair])g.computeVertexNormals();return mergeGeometries([head,hair],false)}
 export function crowd(count,seed=3){
- const rng=rngFrom(seed),bodies=new THREE.InstancedMesh(new THREE.CapsuleGeometry(.11,.3,3,6).translate(0,.27,0),new THREE.MeshStandardMaterial({roughness:.8}),count),heads=new THREE.InstancedMesh(new THREE.SphereGeometry(.09,8,6).translate(0,.6,0),new THREE.MeshStandardMaterial({roughness:.7}),count),col=new THREE.Color();
- for(let i=0;i<count;i++){bodies.setColorAt(i,col.setHex(CLOTH[Math.floor(rng()*CLOTH.length)]));heads.setColorAt(i,col.setHex([0x4a2c1d,0x5c3824,0x3b2418,0x6b4129][i%4]))}
+ const rng=rngFrom(seed),mat=r=>new THREE.MeshStandardMaterial({roughness:r,vertexColors:true}),bodies=new THREE.InstancedMesh(personGeometry(),mat(.85),count),heads=new THREE.InstancedMesh(headGeometry(),mat(.7),count),col=new THREE.Color();
+ for(let i=0;i<count;i++){bodies.setColorAt(i,col.setHex(CLOTH[Math.floor(rng()*CLOTH.length)]));heads.setColorAt(i,col.setHex([0x4a2c1d,0x5c3824,0x3b2418,0x6b4129,0x8d5a3b,0xc08a64][Math.floor(rng()*6)]))}
  bodies.castShadow=false;return {bodies,heads,count,rng}}
 // Armed soldiers for the homepage firefight: instanced, three draw calls per side.
 // Uniform, gear and skin are separate meshes so each side reads at a glance:

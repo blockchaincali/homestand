@@ -23,21 +23,24 @@
   shelter:{label:'Civilian Shelter',category:'defence',size:'small',cost:90,buildTime:7,hp:800,radius:34,factions:[0],icon:'hq',role:'Protects residents during attacks'},
   clinic:{label:'Field Clinic',raider:'Aid Tent',category:'defence',size:'large',cost:135,buildTime:8,hp:560,radius:40,heal:9,icon:'clinic',role:'Restores nearby friendly units'},
   // Production
-  barracks:{label:'Barracks',raider:'Training Camp',category:'production',size:'large',cost:145,buildTime:8,hp:620,radius:43,produces:['rifle'],icon:'barracks',role:'Trains infantry'},
-  workshop:{label:'Vehicle Workshop',raider:'Technical Yard',category:'production',size:'large',cost:180,buildTime:10,hp:720,radius:48,produces:['patrol','scanner'],requires:['barracks'],icon:'workshop',role:'Builds patrol vehicles and scanners'},
-  factory:{label:'Armoured Vehicle Factory',raider:'Heavy Garage',category:'production',size:'large',cost:260,buildTime:14,hp:900,radius:52,produces:['tank','rocket'],requires:['workshop','comms'],icon:'tank',role:'Builds tanks and rocket batteries'}
+  barracks:{label:'Barracks',raider:'Training Camp',category:'production',size:'large',cost:145,buildTime:8,hp:620,radius:43,produces:['rifle','gunner','rpg','sniper'],icon:'barracks',role:'Trains infantry · upgrade for heavier teams'},
+  workshop:{label:'Vehicle Workshop',raider:'Technical Yard',category:'production',size:'large',cost:180,buildTime:10,hp:720,radius:48,produces:['patrol','scanner','apc'],requires:['barracks'],icon:'workshop',role:'Builds patrol vehicles and scanners · upgrade for armoured carriers'},
+  factory:{label:'Armoured Vehicle Factory',raider:'Heavy Garage',category:'production',size:'large',cost:260,buildTime:14,hp:900,radius:52,produces:['tank','rocket','heavytank','artillery'],requires:['workshop','comms'],icon:'tank',role:'Builds tanks and rocket batteries · upgrade for heavy armour'}
  };
  const CATEGORIES=[{id:'command',label:'Command'},{id:'defence',label:'Defence'},{id:'production',label:'Production'}];
  // Production times (seconds) and the faction names for each unit.
- const PRODUCTION={engineer:{time:6,from:'hq'},rifle:{time:4.5,from:'barracks'},patrol:{time:8,from:'workshop'},scanner:{time:7,from:'workshop'},tank:{time:11,from:'factory'},rocket:{time:10,from:'factory'},hacker:{time:7,from:'comms'}};
+ const PRODUCTION={engineer:{time:6,from:'hq'},rifle:{time:4.5,from:'barracks'},patrol:{time:8,from:'workshop'},scanner:{time:7,from:'workshop'},tank:{time:11,from:'factory'},rocket:{time:10,from:'factory'},gunner:{time:5.5,from:'barracks',level:2},rpg:{time:6,from:'barracks',level:2},sniper:{time:7,from:'barracks',level:3},apc:{time:9,from:'workshop',level:2},heavytank:{time:14,from:'factory',level:2},artillery:{time:13,from:'factory',level:3},hacker:{time:7,from:'comms'}};
  const UNIT_NAMES={
-  0:{engineer:'Engineer',rifle:'Response Squad',patrol:'Protected Patrol',scanner:'Eagle-Eye Scanner',tank:'Siege Tank',rocket:'Rocket Battery',hacker:'Cyber Team'},
-  1:{engineer:'Sapper',rifle:'Fighters',patrol:'Technical',scanner:'Sweeper',tank:'Armoured Truck',rocket:'Rocket Truck',hacker:'Hack Cell'}
+  0:{engineer:'Engineer',rifle:'Response Squad',gunner:'MG Team',rpg:'Anti-Armour Team',sniper:'Marksman Team',apc:'Armoured Carrier',heavytank:'Battle Tank',artillery:'Howitzer',patrol:'Protected Patrol',scanner:'Eagle-Eye Scanner',tank:'Siege Tank',rocket:'Rocket Battery',hacker:'Cyber Team'},
+  1:{engineer:'Sapper',rifle:'Fighters',gunner:'Gunner Crew',rpg:'RPG Crew',sniper:'Sharpshooter',apc:'Gun Truck',heavytank:'Heavy Armour',artillery:'Mortar Truck',patrol:'Technical',scanner:'Sweeper',tank:'Armoured Truck',rocket:'Rocket Truck',hacker:'Hack Cell'}
  };
  const FACTIONS=[{id:'defence',name:'Community Defence',short:'DEFENCE'},{id:'raiders',name:'Black Harmattan Raiders',short:'RAIDERS'}];
  const name=(type,team)=>{const s=STRUCTURES[type];if(!s)return type==='hq'?(team===1?'Raider Camp':'Command HQ'):type;return team===1&&s.raider?s.raider:s.label};
  const allowed=(type,team)=>{const s=STRUCTURES[type];return Boolean(s)&&(!s.factions||s.factions.includes(team))};
  // Which requirements are still missing, given the team's completed structures.
+ // Production buildings upgrade to level 3; each level unlocks stronger units (PRODUCTION[type].level).
+ const MAX_LEVEL={barracks:3,workshop:2,factory:3},UPGRADE_COST={2:80,3:160};
+ const maxLevel=type=>MAX_LEVEL[type]||2,unitLevel=type=>PRODUCTION[type]?.level||1;
  const missing=(type,built)=>(STRUCTURES[type]?.requires||[]).filter(req=>!built.includes(req));
- return Object.freeze({STRUCTURES,CATEGORIES,PRODUCTION,UNIT_NAMES,FACTIONS,name,allowed,missing,BASE_SUPPLY:20,SUPPLY_CAP:60,ASSIST_FALLOFF:.65,ASSIST_MAX:4});
+ return Object.freeze({STRUCTURES,CATEGORIES,PRODUCTION,UNIT_NAMES,FACTIONS,name,allowed,missing,MAX_LEVEL,UPGRADE_COST,maxLevel,unitLevel,BASE_SUPPLY:20,SUPPLY_CAP:60,ASSIST_FALLOFF:.65,ASSIST_MAX:4});
 });

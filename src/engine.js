@@ -1,5 +1,5 @@
 'use strict';
-const {W,H,BOUNDS,UNITS,STRUCTURES,IED,START_CREDITS,MAX_SUPPLY,MAX_TIME,WIN_SCORE,NODES}=require('./config');
+const {W,H,BOUNDS,UNITS,VEHICLES,STRUCTURES,IED,START_CREDITS,MAX_SUPPLY,MAX_TIME,WIN_SCORE,NODES}=require('./config');
 const {blockers:sceneryBlockers,theatre:getTheatre,theatreIds,layouts,territoryOf,soften:softenText}=require('../public/maps');
 const {territory:territoryMethods,PREP_CHOICES}=require('./territory');
 const {civilians:civilianMethods}=require('./civilians');
@@ -108,6 +108,7 @@ class Game {
   const recipe=CATALOG.PRODUCTION[type],definition=UNITS[type];if(!recipe||!definition||recipe.from==='hq'&&this.scenario!=='territory')return {ok:false,reason:'That unit cannot be produced here'};
   const producer=recipe.from==='hq'?this.bases.find(b=>b.id===structureId&&b.team===team&&b.kind==='hq'&&b.hp>0):this.structures.find(s=>s.id===structureId&&s.team===team&&s.type===recipe.from&&s.status==='active'&&(STRUCTURES[s.type].produces||[]).includes(type));
   if(!producer)return {ok:false,reason:'Select an active '+(recipe.from==='hq'?'command HQ':CATALOG.name(recipe.from,team).toLowerCase())};
+  const needLevel=CATALOG.unitLevel(type);if(recipe.from!=='hq'&&(producer.level||1)<needLevel)return {ok:false,reason:'Upgrade the '+CATALOG.name(recipe.from,team).toLowerCase()+' to level '+needLevel};
   const queue=producer.queue||(producer.queue=[]),used=queue.length+(producer.production?1:0),wanted=clamp(Math.floor(Number(count)||1),1,QUEUE_LIMIT);
   if(used>=QUEUE_LIMIT)return {ok:false,reason:'Queue full ('+QUEUE_LIMIT+')'};
   if(!used){const blocked=this.productionBlocked(team,type);if(blocked&&wanted===1)return {ok:false,reason:blocked}}
@@ -122,14 +123,14 @@ class Game {
   if(producer.production||!producer.queue?.length)return;const type=producer.queue[0],blocked=this.productionBlocked(producer.team,type);producer.waiting=blocked;if(blocked)return;
   producer.queue.shift();this.teams[producer.team].credits-=UNITS[type].cost;producer.production={type,progress:0,duration:CATALOG.PRODUCTION[type].time};
   if(this.scenario==='territory')this.event(CATALOG.UNIT_NAMES[producer.team][type].toUpperCase()+' IN PRODUCTION',producer.team);
-  else if(!producer.queue.length)this.event(type==='rifle'?'INFANTRY SQUAD TRAINING':type==='scanner'?'EAGLE-EYE SCANNER IN PRODUCTION':'PROTECTED PATROL VEHICLE IN PRODUCTION',producer.team);
+  else if(!producer.queue.length)this.event(type==='rifle'?'INFANTRY SQUAD TRAINING':type==='scanner'?'EAGLE-EYE SCANNER IN PRODUCTION':type==='patrol'?'PROTECTED PATROL VEHICLE IN PRODUCTION':UNITS[type].label.toUpperCase()+' IN PRODUCTION',producer.team);
  }
  cancelQueue(team,structureId){const producer=[...this.structures,...this.bases].find(v=>v.id===structureId&&v.team===team);if(!producer)return {ok:false,reason:'Select one of your buildings'};const n=producer.queue?.length||0;producer.queue=[];producer.waiting=null;return {ok:true,cleared:n}}
  repairStructure(team,structureId,builderIds){
   const structure=this.structures.find(value=>value.id===structureId&&value.team===team&&value.status==='active');if(!structure)return {ok:false,reason:'Select a completed friendly defense'};if(structure.hp>=structure.maxHp)return {ok:false,reason:'This defense is already at full health'};const engineer=this.units.find(unit=>unit.team===team&&unit.type==='engineer'&&builderIds?.includes(unit.id));if(!engineer)return {ok:false,reason:'Select an engineer vehicle to repair'};engineer.order='repair';engineer.dest={x:structure.x,y:structure.y};engineer.targetId=structure.id;engineer.hold=false;this.event('ENGINEER DISPATCHED FOR MAINTENANCE',team);return {ok:true};
  }
  upgradeStructure(team,structureId){
-  const structure=this.structures.find(value=>value.id===structureId&&value.team===team&&value.status==='active');if(!structure)return {ok:false,reason:'Select a completed structure'};if(structure.level>=2)return {ok:false,reason:'Structure already upgraded'};if(structure.upgradeProgress)return {ok:false,reason:'Upgrade already underway'};const cost=80;if(this.teams[team].credits<cost)return {ok:false,reason:'Need '+cost+' credits'};this.teams[team].credits-=cost;structure.upgradeProgress=.001;this.event('STRUCTURE UPGRADE STARTED',team);return {ok:true};
+  const structure=this.structures.find(value=>value.id===structureId&&value.team===team&&value.status==='active');if(!structure)return {ok:false,reason:'Select a completed structure'};const level=structure.level||1;if(level>=CATALOG.maxLevel(structure.type))return {ok:false,reason:'Structure already at max level'};if(structure.upgradeProgress)return {ok:false,reason:'Upgrade already underway'};const cost=CATALOG.UPGRADE_COST[level+1]||80;if(this.teams[team].credits<cost)return {ok:false,reason:'Need '+cost+' credits'};this.teams[team].credits-=cost;structure.upgradeProgress=.001;this.event('STRUCTURE UPGRADE STARTED',team);return {ok:true};
  }
  spawnAt(team,type,x,y){const definition=UNITS[type];if(!definition)return null;const unit={id:this.nextId('u'),team,type,x:clamp(x,BOUNDS.left,BOUNDS.right),y:clamp(y,BOUNDS.top,BOUNDS.bottom),hp:definition.hp,maxHp:definition.hp,radius:definition.radius,cd:0,order:'hold',dest:null,targetId:null,hold:true,angle:team===0?0:Math.PI,vx:0,vy:0};this.units.push(unit);return unit}
  command(team,ids,action,x,y,targetId){
@@ -216,7 +217,7 @@ class Game {
   this.mines=this.mines.filter(value=>value!==mine);
   this.blasts.push({id:this.nextId('ied'),kind:'ied',team:mine.team,x:mine.x,y:mine.y,delay:0,age:0,radius:IED.radius,duration:1.15,hit:true});
   for(const target of this.combatants()){if(target.team===mine.team||target.hp<=0)continue;const d=Math.hypot(target.x-mine.x,target.y-mine.y);if(d>IED.radius+target.radius)continue;
-   const falloff=1-.55*clamp(d/IED.radius,0,1),armor=['tank','patrol'].includes(target.type)||!this.units.includes(target)?.6:1;this.applyDamage(target,IED.damage*falloff*armor,mine.team)}
+   const falloff=1-.55*clamp(d/IED.radius,0,1),armor=VEHICLES.includes(target.type)&&target.type!=='engineer'||!this.units.includes(target)?.6:1;this.applyDamage(target,IED.damage*falloff*armor,mine.team)}
   this.strayFire(mine.x,mine.y,IED.radius,IED.damage,mine.team);
   this.event('IED DETONATED - '+this.placeName(mine),mine.team);
  }
@@ -281,7 +282,7 @@ class Game {
    if(u.type==='scanner'){u.rocketCd=Math.max(0,(u.rocketCd||0)-dt);if(!job&&!ceasefire&&u.rocketCd<=0){const vehicle=this.closestVehicle(u,d.rocketRange);if(vehicle){this.fire(u,vehicle,d.rocketDamage,380,d.rocketSplash,'rocket');u.rocketCd=d.rocketRate;if(!target)u.angle=Math.atan2(vehicle.y-u.y,vehicle.x-u.x)}}}
    if(target&&hypot(u,target)<=d.range){
     u.angle=Math.atan2(target.y-u.y,target.x-u.x);
-    if(u.cd<=0){this.fire(u,target,d.damage,d.bulletSpeed,d.splash);u.cd=d.fireRate}
+    if(u.cd<=0){this.fire(u,target,d.damage*(d.vsArmour&&VEHICLES.includes(target.type)?d.vsArmour:1),d.bulletSpeed,d.splash);u.cd=d.fireRate}
     continue;
    }
    if(u.hold)continue;
@@ -363,7 +364,7 @@ class Game {
     if(structure.progress>=structure.buildTime){structure.status='active';structure.hp=structure.maxHp;structure.builders=0;for(const b of this.units.filter(u=>u.order==='construct'&&u.targetId===structure.id)){b.order='hold';b.targetId=null;b.dest=null;b.hold=true}this.stats[structure.team].built++;this.event((this.scenario==='territory'?CATALOG.name(structure.type,structure.team):STRUCTURES[structure.type].label).toUpperCase()+' READY',structure.team)}
     continue;
    }
-   if(structure.upgradeProgress){structure.upgradeProgress+=dt;if(structure.upgradeProgress>=5){structure.upgradeProgress=0;structure.level=2;structure.maxHp=Math.ceil(structure.maxHp*1.35);structure.hp=structure.maxHp;this.event(STRUCTURES[structure.type].label.toUpperCase()+' UPGRADED',structure.team)}}
+   if(structure.upgradeProgress){structure.upgradeProgress+=dt;if(structure.upgradeProgress>=5){structure.upgradeProgress=0;structure.level=(structure.level||1)+1;structure.maxHp=Math.ceil(structure.maxHp*1.35);structure.hp=structure.maxHp;this.event(STRUCTURES[structure.type].label.toUpperCase()+' UPGRADED TO LEVEL '+structure.level,structure.team)}}
    const def=STRUCTURES[structure.type];if(structure.hackedUntil>this.time)continue;
    if(def.damage){structure.cd-=dt;if(!this.training&&!this.ceasefire()){const target=this.closestEnemy(structure,structure.team,def.range+(structure.level-1)*35);if(target&&structure.cd<=0){this.fire(structure,target,def.damage+(structure.level-1)*8,650,def.splash||4);structure.cd=def.fireRate}}}
    if(structure.type==='clinic'){const amount=STRUCTURES.clinic.heal*(structure.level===2?1.45:1)*dt;for(const unit of this.units.filter(unit=>unit.team===structure.team&&unit.hp<unit.maxHp&&Math.hypot(unit.x-structure.x,unit.y-structure.y)<155))unit.hp=Math.min(unit.maxHp,unit.hp+amount)}
