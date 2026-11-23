@@ -14,7 +14,16 @@ test('Frontier Outskirts is a larger map with bases outside the city',()=>{
   for(const c of L.compounds)assert.ok(Math.hypot(c.x-p.x,c.y-p.y)>p.r+60,p.id+' clear of houses')}
  for(const w of L.walls){const t=L.territories.find(t=>t.team===w.team);assert.ok(w.x1>=t.x1&&w.x2<=t.x2,'walls inside their territory')}
  for(const n of L.checkpointNodes)assert.ok(L.roads.some(r=>r.points.some(([x,y])=>x===n.x&&y===n.y)),n.id+' on a road');
- assert.ok(L.roads.filter(r=>r.surface==='asphalt').every(r=>r.width>=84),'main city streets are wide');
+ assert.ok(L.roads.find(r=>r.id==='highway').width>=100,'the highway is wide');
+ assert.ok(L.roads.some(r=>r.condition==='worn')&&L.roads.some(r=>r.surface==='laterite'&&r.points.length>3),'roads vary: worn tar and winding dirt');
+ assert.ok(L.roads.filter(r=>r.points.length>3).some(r=>new Set(r.points.map(p=>p[1])).size>2),'roads bend instead of running dead straight');
+});
+
+test('each side has a staging yard outside its gates to build and deploy forward',()=>{
+ for(const team of [0,1]){const wall=L.walls.find(w=>w.team===team),forward=L.plots.filter(p=>p.team===team&&p.kind==='forward');
+  assert.equal(forward.length,4);for(const p of forward){assert.ok(team===0?p.x>wall.x2:p.x<wall.x1,p.id+' is outside the wall');assert.equal(MAPS.territoryOf('outskirts',p),team)}
+  const g=new Game({mode:'pvp',scenario:'territory',prepMinutes:5,theatreId:'jos',layout:'outskirts'});g.addParticipant('d','D',0);g.addParticipant('r','R',1);g.start();g.teams[team].credits=5000;
+  const site=g.constructionSite(team,'barracks',forward[0].x,forward[0].y);assert.equal(site.ok,true,site.reason)}
 });
 
 test('a match on Frontier Outskirts uses the larger world and the AI builds, upgrades and fights there',()=>{
