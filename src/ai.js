@@ -8,8 +8,8 @@ const MAPS=require('../public/maps');
 
 const PROFILES={
  recruit:{hackers:0,snatch:1,rescue:0,period:3.6,engineers:2,parallel:1,assist:false,repair:false,reserve:40,attackSupply:6,firstAttack:110,attackEvery:130,maxSupply:22,captureSquads:1,mix:['rifle','rifle','rifle','patrol'],ied:0,split:false,announce:true,orderLength:7},
- standard:{hackers:1,snatch:2,rescue:2,period:2.2,engineers:3,parallel:2,assist:false,repair:true,reserve:110,attackSupply:12,firstAttack:45,attackEvery:85,maxSupply:40,captureSquads:2,mix:['rifle','rifle','patrol','tank','rocket'],ied:.08,split:false,announce:true,orderLength:11},
- veteran:{hackers:2,snatch:3,rescue:3,period:1.2,engineers:4,parallel:3,assist:true,repair:true,reserve:150,attackSupply:18,firstAttack:12,attackEvery:60,maxSupply:56,captureSquads:3,mix:['rifle','patrol','tank','tank','rocket','rocket'],ied:.2,split:true,announce:false,orderLength:99}
+ standard:{hackers:1,snatch:2,rescue:2,period:2.2,engineers:3,parallel:2,assist:false,repair:true,reserve:110,attackSupply:12,firstAttack:45,attackEvery:85,maxSupply:40,captureSquads:2,mix:['rifle','rifle','gunner','rpg','patrol','apc','tank','rocket','heavytank'],ied:.08,split:false,announce:true,orderLength:11},
+ veteran:{hackers:2,snatch:3,rescue:3,period:1.2,engineers:4,parallel:3,assist:true,repair:true,reserve:150,attackSupply:18,firstAttack:12,attackEvery:60,maxSupply:56,captureSquads:3,mix:['rifle','gunner','rpg','sniper','patrol','apc','tank','heavytank','heavytank','rocket','artillery'],ied:.2,split:true,announce:false,orderLength:99}
 };
 const BUILD_ORDER={
  0:['barracks','collector','depot','watchtower','workshop','comms','guardpost','bunker','factory','depot','emplacement','clinic','watchtower','bunker','emplacement','depot'],
@@ -76,7 +76,9 @@ class FactionAI{
  production(){
   const g=this.game,cap=Math.min(this.p.maxSupply,g.supplyCap(this.team)),pending=this.structures().some(s=>s.status==='building')||Boolean(this.nextBuild());
   for(const producer of this.structures().filter(s=>s.status==='active'&&STRUCTURES[s.type].produces&&!s.production)){
-   const options=STRUCTURES[producer.type].produces.filter(type=>(type!=='scanner'||!this.own('scanner').length&&this.level!=='recruit')&&(type!=='hacker'||this.own('hacker').length+(producer.queue?.length||0)<this.p.hackers));
+   // Standard and veteran commanders upgrade their production lines when they can spare the credits.
+   const level=producer.level||1,upgradeCost=CATALOG.UPGRADE_COST[level+1];if(this.level!=='recruit'&&level<CATALOG.maxLevel(producer.type)&&!producer.upgradeProgress&&upgradeCost&&this.credits()>=upgradeCost+this.p.reserve+120&&Math.random()<(this.level==='veteran'?.35:.15)){g.upgradeStructure(this.team,producer.id);continue}
+   const options=STRUCTURES[producer.type].produces.filter(type=>CATALOG.unitLevel(type)<=level&&(type!=='scanner'||!this.own('scanner').length&&this.level!=='recruit')&&(type!=='hacker'||this.own('hacker').length+(producer.queue?.length||0)<this.p.hackers));
    const preferred=this.p.mix.filter(type=>options.includes(type)),type=(preferred.length?preferred:options)[Math.floor(Math.random()*(preferred.length||options.length))];
    if(!type)continue;const reserve=pending?this.p.reserve:0;
    if(g.supply(this.team)+UNITS[type].supply>cap||this.credits()<UNITS[type].cost+reserve)continue;

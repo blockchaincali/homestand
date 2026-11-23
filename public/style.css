@@ -678,3 +678,7 @@ body:not(.in-battle) .target-alert{display:none}
 .world-pin{transform:translate(-6px,-50%)}.world-pin.live{transform:translate(-8px,-50%)}
 .world-pin.left{flex-direction:row-reverse;transform:translate(calc(-100% + 6px),-50%)}.world-pin.live.left{transform:translate(calc(-100% + 8px),-50%)}
 .world-pin.left span{text-align:right}
+/* Units locked behind a building upgrade show the level they need. */
+.ctx-btn[data-produce]{position:relative}
+.ctx-btn[data-lock]:not([data-lock=""])::after{content:attr(data-lock);position:absolute;top:4px;right:6px;font-size:9px;font-weight:900;letter-spacing:.08em;padding:2px 5px;border-radius:5px;background:#f2c230;color:#1b1305}
+.ctx-btn[data-lock]:not([data-lock=""]){opacity:.62}
