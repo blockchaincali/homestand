@@ -113,39 +113,44 @@
   {id:'dA',x:330,y:420},{id:'dB',x:560,y:420},{id:'dC',x:790,y:420},{id:'dD',x:560,y:720},{id:'dE',x:790,y:720},
   {id:'dF',x:560,y:1280},{id:'dG',x:790,y:1280},{id:'dH',x:330,y:1580},{id:'dI',x:560,y:1580},{id:'dJ',x:790,y:1580}
  ].map(p=>({...p,team:0,kind:'base',r:55}));
+ // Staging yard just outside the gates: owned plots for forward barracks, workshops and defences,
+ // so troops can be produced and gathered close to the city instead of deep inside the base.
+ const stagingPlots=[{id:'dK',x:1250,y:720},{id:'dL',x:1250,y:1280},{id:'dM',x:1180,y:860},{id:'dN',x:1180,y:1140}].map(p=>({...p,team:0,kind:'forward',r:55}));
  const city=[1480,1830,2170,2520];
  layouts.outskirts={
   size:{w:OW,h:2000},
-  territories:[{team:0,name:'Community Defence Base',x1:125,x2:1050,y1:105,y2:1895},{team:1,name:'Raider Camp',x1:2950,x2:3875,y1:105,y2:1895}],
+  territories:[{team:0,name:'Community Defence Base',x1:125,x2:1320,y1:105,y2:1895},{team:1,name:'Raider Camp',x1:OW-1320,x2:3875,y1:105,y2:1895}],
   // Walled compounds drawn around each base; gaps in the wall where the roads leave for the city.
   walls:[{team:0,x1:200,x2:990,y1:300,y2:1700,gates:[560,1000,1440],gateSide:'east'},{team:1,x1:OW-990,x2:OW-200,y1:300,y2:1700,gates:[560,1000,1440],gateSide:'west'}],
   hq:[{x:430,y:1000},{x:OW-430,y:1000}],
-  plots:[...outskirtsPlots,...mirrorO(outskirtsPlots).map(p=>({...p,team:1})),
-   {id:'fNW',x:1250,y:720,team:null,kind:'forward',r:55},{id:'fSW',x:1250,y:1280,team:null,kind:'forward',r:55},
-   {id:'fNE',x:2750,y:720,team:null,kind:'forward',r:55},{id:'fSE',x:2750,y:1280,team:null,kind:'forward',r:55},
+  plots:[...outskirtsPlots,...mirrorO(outskirtsPlots).map(p=>({...p,team:1})),...stagingPlots,...mirrorO(stagingPlots).map(p=>({...p,team:1})),
    {id:'res0',x:330,y:1280,team:0,kind:'resource',r:55,resource:'Brick kiln'},{id:'res1',x:OW-330,y:720,team:1,kind:'resource',r:55,resource:'Sand pit'},
-   {id:'resN',x:1250,y:420,team:null,kind:'resource',r:55,resource:'Grain silos'},{id:'resS',x:2750,y:1580,team:null,kind:'resource',r:55,resource:'Fuel depot'}],
+   {id:'resN',x:1760,y:200,team:null,kind:'resource',r:55,resource:'Grain silos'},{id:'resS',x:OW-1760,y:1800,team:null,kind:'resource',r:55,resource:'Fuel depot'}],
   checkpointNodes:[{id:'cpN',x:2000,y:560,name:'NORTH CHECKPOINT',route:'north'},{id:'cpC',x:2000,y:1000,name:'CENTRAL JUNCTION',route:'central'},{id:'cpS',x:2000,y:1440,name:'SOUTH CHECKPOINT',route:'south'}],
   facilities:[{id:'facility-clinic',kind:'civilianClinic',x:city[1],y:780,slot:'clinic'},{id:'facility-school',kind:'community',x:city[2],y:780,slot:'school'},{id:'facility-market',kind:'market',x:city[2],y:1220,slot:'market'},{id:'facility-centre',kind:'community',x:city[1],y:1220,slot:'centre'},
    {id:'outpost-north',kind:'community',x:2000,y:200,slot:'outpostNorth',outpost:true},{id:'outpost-south',kind:'community',x:2000,y:1800,slot:'outpostSouth',outpost:true}],
-  defenceSpots:[[{x:1050,y:490},{x:1050,y:630},{x:1050,y:930},{x:1050,y:1070},{x:1050,y:1370},{x:1050,y:1510}],[{x:OW-1050,y:490},{x:OW-1050,y:630},{x:OW-1050,y:930},{x:OW-1050,y:1070},{x:OW-1050,y:1370},{x:OW-1050,y:1510}]],
-  rally:[{x:1130,y:1000},{x:OW-1130,y:1000}],
+  defenceSpots:[[{x:1290,y:500},{x:1300,y:640},{x:1290,y:930},{x:1290,y:1080},{x:1300,y:1370},{x:1290,y:1500}],[{x:OW-1290,y:500},{x:OW-1300,y:640},{x:OW-1290,y:930},{x:OW-1290,y:1080},{x:OW-1300,y:1370},{x:OW-1290,y:1500}]],
+  rally:[{x:1290,y:1000},{x:OW-1290,y:1000}],
   routes:{north:[{x:1060,y:560},{x:2000,y:560},{x:2940,y:560}],central:[{x:1150,y:1000},{x:2000,y:1000},{x:2850,y:1000}],south:[{x:1060,y:1440},{x:2000,y:1440},{x:2940,y:1440}]},
   zones:[
    {id:'defence',name:'Community Defence Base',x:590,y:1000,r:520},{id:'raiders',name:'Raider Camp',x:OW-590,y:1000,r:520},
    {id:'residential',name:'City',x:2000,y:1000,r:600},{id:'outpostNorth',name:'North Outpost',x:2000,y:200,r:120},{id:'outpostSouth',name:'South Outpost',x:2000,y:1800,r:120},
    {id:'contested',name:'Contested Ground',x:2000,y:1000,r:420}
   ],
+  // Real towns grow, they are not planned: roads bend, narrow and wear. Good asphalt on the
+  // highway and west avenue, potholed tar on the north road and east avenue, laterite in the south.
   roads:[
-   {id:'highway',surface:'asphalt',width:110,points:[[60,1000],[1000,1000],[2000,1000],[3000,1000],[3940,1000]]},
-   {id:'north-road',surface:'asphalt',width:84,points:[[430,560],[1000,560],[2000,560],[3000,560],[OW-430,560]]},
-   {id:'south-road',surface:'asphalt',width:84,points:[[430,1440],[1000,1440],[2000,1440],[3000,1440],[OW-430,1440]]},
-   {id:'west-avenue',surface:'asphalt',width:84,points:[[1650,240],[1650,1000],[1650,1760]]},
-   {id:'east-avenue',surface:'asphalt',width:84,points:[[2350,240],[2350,1000],[2350,1760]]},
+   {id:'highway',surface:'asphalt',width:104,points:[[60,1000],[520,1000],[990,1000],[1300,1028],[1600,1012],[2000,1000],[2400,976],[2700,990],[3010,1000],[3480,1000],[3940,1000]]},
+   {id:'north-road',surface:'asphalt',condition:'worn',width:76,points:[[430,560],[990,560],[1150,600],[1400,540],[1650,572],[2000,560],[2300,522],[2600,588],[2850,606],[3010,560],[OW-430,560]]},
+   {id:'south-road',surface:'laterite',width:72,points:[[430,1440],[990,1440],[1180,1402],[1420,1468],[1700,1422],[2000,1440],[2250,1488],[2550,1432],[2820,1400],[3010,1440],[OW-430,1440]]},
+   {id:'west-avenue',surface:'asphalt',width:84,points:[[1650,240],[1622,600],[1662,1000],[1640,1400],[1676,1760]]},
+   {id:'east-avenue',surface:'asphalt',condition:'worn',width:74,points:[[2350,240],[2378,620],[2336,1000],[2368,1380],[2330,1760]]},
    {id:'defence-yard',surface:'laterite',width:60,points:[[430,560],[430,1000],[430,1440]]},
    {id:'raider-yard',surface:'laterite',width:60,points:[[OW-430,560],[OW-430,1000],[OW-430,1440]]},
-   {id:'outpost-lane',surface:'laterite',width:44,points:[[2000,200],[2000,560]]},
-   {id:'outpost-lane-south',surface:'laterite',width:44,points:[[2000,1440],[2000,1800]]}
+   {id:'outpost-lane',surface:'laterite',width:40,points:[[2000,200],[1985,380],[2000,560]]},
+   {id:'outpost-lane-south',surface:'laterite',width:40,points:[[2000,1440],[2018,1620],[2000,1800]]},
+   {id:'bush-track-west',surface:'laterite',width:34,points:[[1060,1170],[1110,1380],[1230,1560],[1300,1760]]},
+   {id:'bush-track-east',surface:'laterite',width:34,points:[[OW-1060,830],[OW-1110,620],[OW-1230,440],[OW-1300,240]]}
   ],
   compounds:[
    {x:city[0],y:780,w:120,d:86,rot:.02,style:0},{x:city[3],y:780,w:120,d:86,rot:-.02,style:1,storeys:2},
@@ -158,8 +163,8 @@
   checkpoints:[{x:2000,y:1000,rot:0},{x:2000,y:560,rot:0},{x:2000,y:1440,rot:0}],
   staging:{x:OW-590,y:1000,w:760,d:1360,sparse:true},
   forests:[{x:250,y:190,r:90},{x:250,y:1810,r:90},{x:OW-250,y:190,r:90},{x:OW-250,y:1810,r:90},{x:1220,y:200,r:80},{x:OW-1220,y:1800,r:80},{x:1250,y:1820,r:70},{x:OW-1250,y:180,r:70},{x:1200,y:860,r:45},{x:OW-1200,y:1140,r:45}],
-  pads:[{x:430,y:1000,r:170,c:'rgba(124,122,118,A)'},{x:OW-430,y:1000,r:170,c:'rgba(120,92,64,A)'},{x:595,y:1000,r:560,c:'rgba(138,134,124,A)'},{x:OW-595,y:1000,r:560,c:'rgba(136,104,72,A)'},{x:2000,y:1000,r:180,c:'rgba(150,140,120,A)'}],
-  noScatter:[{x1:125,x2:1060,y1:105,y2:1895},{x1:2940,x2:3875,y1:105,y2:1895},{x1:1350,x2:2650,y1:280,y2:1720}],
+  pads:[{x:1230,y:1000,r:260,c:'rgba(136,128,112,A)'},{x:OW-1230,y:1000,r:260,c:'rgba(132,100,70,A)'},{x:430,y:1000,r:170,c:'rgba(124,122,118,A)'},{x:OW-430,y:1000,r:170,c:'rgba(120,92,64,A)'},{x:595,y:1000,r:560,c:'rgba(138,134,124,A)'},{x:OW-595,y:1000,r:560,c:'rgba(136,104,72,A)'},{x:2000,y:1000,r:180,c:'rgba(150,140,120,A)'}],
+  noScatter:[{x1:125,x2:1330,y1:105,y2:1895},{x1:OW-1330,x2:3875,y1:105,y2:1895},{x1:1350,x2:2650,y1:280,y2:1720}],
   billboards:[[1720,940,'blue'],[2280,1060,'red'],[2060,640,'green']],
   signs:[[1040,980],[OW-1040,1020],[2030,540],[2030,1420],[1700,980]],
   evacuationPoint:{x:260,y:1000}

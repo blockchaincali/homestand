@@ -682,3 +682,23 @@ body:not(.in-battle) .target-alert{display:none}
 .ctx-btn[data-produce]{position:relative}
 .ctx-btn[data-lock]:not([data-lock=""])::after{content:attr(data-lock);position:absolute;top:4px;right:6px;font-size:9px;font-weight:900;letter-spacing:.08em;padding:2px 5px;border-radius:5px;background:#f2c230;color:#1b1305}
 .ctx-btn[data-lock]:not([data-lock=""]){opacity:.62}
+/* Objective banner pops up when the objective changes, then fades away (Intel keeps the full brief). */
+.mission-guide{transition:opacity .45s ease,transform .45s ease}
+.mission-guide.auto-hidden:not(.coaching){opacity:0;transform:translate(-50%,-12px);pointer-events:none}
+.target-alert{transition:opacity .4s ease}
+/* Order bar: can be collapsed for more battlefield; it steps aside while a building panel is open. */
+.orders-toggle{align-self:flex-end;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:inherit;font:800 11px var(--sans,inherit);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.orders-toggle svg{width:15px;height:15px}
+.battle-shell.orders-collapsed .hud-br .commandbar,.battle-shell.orders-collapsed .hud-br .selection-summary{display:none}
+.battle-shell:not(.orders-collapsed) .orders-toggle span::after{content:' ▾'}
+.battle-shell.orders-collapsed .orders-toggle span::after{content:' ▴'}
+.battle-shell.structure-open .hud-br{display:none}
+/* Production quantity: a compact row beside the building name instead of overlapping it. */
+.qty-control{display:inline-flex;align-items:center;gap:4px;flex:none;padding:4px 6px;border-radius:10px;background:rgba(0,0,0,.28);border:1px solid var(--line)}
+.qty-control[hidden]{display:none}
+.qty-control small{font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--muted);margin-right:2px}
+.qty-control button{min-width:26px;height:26px;padding:0 6px;border-radius:7px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:inherit;font-weight:800;cursor:pointer}
+.qty-control input{width:40px;height:26px;text-align:center;border-radius:7px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:inherit;font-weight:800;-moz-appearance:textfield;appearance:textfield}
+.qty-control input::-webkit-inner-spin-button,.qty-control input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.context-head strong{overflow:hidden;text-overflow:ellipsis;max-width:230px}
+.structure-context{max-width:calc(100vw - 32px);overflow-x:auto;scrollbar-width:thin}
