@@ -32,3 +32,14 @@ test('anti-armour teams hit vehicles harder than infantry',()=>{
  const hits=[];const fire=g.fire.bind(g);g.fire=(src,target,damage,...rest)=>{if(src===at)hits.push([target.type,damage]);return fire(src,target,damage,...rest)};
  g.ceasefire=()=>false;for(const target of [tank,rifle]){hits.length=0;at.cd=0;at.targetId=target.id;at.order='attack';at.hold=false;for(let i=0;i<40&&!hits.length;i++)g.step(.05);if(hits.length)assert.equal(hits[0][1],UNITS.rpg.damage*(target.type==='tank'?UNITS.rpg.vsArmour:1))}
 });
+
+test('campaign (Safe Haven) barracks and workshop also unlock their higher tiers',()=>{
+ const g=new Game({mode:'solo',roomCode:'TIERS',difficulty:'recruit',missionId:'safe-haven'});g.addParticipant('p0','Coordinator',0);g.addParticipant('bot','Bot',1,true);g.start();g.tutorialComplete(0);
+ const engineer=g.units.find(u=>u.type==='engineer');g.teams[0].credits=5000;
+ const build=(type,x,y)=>{const r=g.constructionSite(0,type,x,y,[engineer.id]);assert.equal(r.ok,true,r.reason);engineer.x=x;engineer.y=y;for(let t=0;t<r.structure.buildTime+.2;t+=.05)g.step(.05);return r.structure};
+ const barracks=build('barracks',650,760),workshop=build('workshop',650,610);
+ assert.match(g.produce(0,barracks.id,'gunner').reason,/level 2/);
+ for(const s of [barracks,workshop]){assert.equal(g.upgradeStructure(0,s.id).ok,true);run(g,5.2)}
+ assert.equal(g.produce(0,barracks.id,'gunner').ok,true);assert.equal(g.produce(0,workshop.id,'apc').ok,true);
+ assert.equal(g.upgradeStructure(0,barracks.id).ok,true);run(g,5.2);assert.equal(barracks.level,3);assert.equal(g.produce(0,barracks.id,'sniper').ok,true);
+});
